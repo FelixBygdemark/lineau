@@ -1,0 +1,126 @@
+
+
+
+/* Custom Cursor */
+body:has([data-cursor]:hover) .cursor { 
+  opacity: 1; 
+}
+
+.button:hover .button-bg{
+  transform: scale(0.95);
+}
+
+/* GPT reveal lines on scroll */
+.reveal-block .line {
+  display: block;
+  overflow: hidden; /* clip children */
+}
+
+.reveal-block .line > div {
+  transform: translateY(100%);
+  display: inline-block;
+}
+
+/* Ilja stagger text-links */
+  a[stagger-link] [stagger-link-text]{
+  	text-shadow: 0px 1em 0px var(--swatch--dark-900); 
+  }
+  a[stagger-link] [stagger-link-text="beige"]{
+  	text-shadow: 0px 1em 0px var(--beige); 
+  }
+  a[stagger-link] [stagger-link-text="orange"]{
+  	text-shadow: 0px 1em 0px var(--orange); 
+  }
+
+/* OSMO link underline */
+.underline-link::before,
+.underline-link.is--alt::before,
+.underline-link.is--alt::after{
+  content: "";
+  position: absolute;
+  bottom: 0em;
+  left: 0;
+  width: 100%;
+  height: 0.0625rem;
+  background-color: #ffffff;
+  transition: transform 0.735s cubic-bezier(0.625, 0.05, 0, 1);
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+}
+
+.underline-link:hover::before {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+}
+
+/* Alt */
+.underline-link.is--alt::before {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+  transition-delay: 0.3s;
+}
+
+.underline-link.is--alt:hover::before {
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+  transition-delay: 0s;
+}
+
+.underline-link.is--alt::after {
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+  transition-delay: 0s;
+}
+
+.underline-link.is--alt:hover::after {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+  transition-delay: 0.3s;
+}
+
+
+/* OSMO link underline 2 */
+.underline-link-2::before,
+.underline-link-2.is--alt::before,
+.underline-link-2.is--alt::after {
+  content: "";
+  position: absolute;
+  bottom: 0em;
+  left: 0;
+  width: 100%;
+  height: 0.0625rem;
+  background-color: #270029;
+  transition: transform 0.735s cubic-bezier(0.625, 0.05, 0, 1);
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+}
+
+.underline-link-2:hover::before {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+}
+
+/* Alt */
+.underline-link-2.is--alt::before {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+  transition-delay: 0.3s;
+}
+
+.underline-link-2.is--alt:hover::before {
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+  transition-delay: 0s;
+}
+
+.underline-link-2.is--alt::after {
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+  transition-delay: 0s;
+}
+
+.underline-link-2.is--alt:hover::after {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+  transition-delay: 0.3s;
+}
