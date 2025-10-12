@@ -173,19 +173,32 @@ document.querySelectorAll('[data-fade="case-card"]').forEach(el => {
 });
 
 //Case card hover GPT
-document.querySelectorAll(".case_item_wrap").forEach((wrap) => {
-  const imgClip = wrap.querySelector(".case_img_clip");
+document.querySelectorAll(".case_card").forEach((wrap) => {
+  const imgClip = wrap.querySelector(".case_media_parallax");
   const textBlocks = wrap.querySelectorAll(".case_text");
 
-  const splitTexts = Array.from(textBlocks).map(el => new SplitText(el, { type: "chars" }));
+  // Check if this card has the required data attributes
+  const hasScaleDown = wrap.hasAttribute('data-scale-down');
+  const hasScaleUp = imgClip && imgClip.hasAttribute('data-scale-up');
+  const hasTextIn = wrap.hasAttribute('data-text-in');
 
-  // Immediately hide all split characters on page load
-  splitTexts.forEach(split => {
-    gsap.set(split.chars, {
-      y: 20,
-      opacity: 0
+  // Only proceed if at least one animation is enabled
+  if (!hasScaleDown && !hasScaleUp && !hasTextIn) return;
+
+  let splitTexts = [];
+  
+  // Only create SplitText if text animation is enabled
+  if (hasTextIn && textBlocks.length) {
+    splitTexts = Array.from(textBlocks).map(el => new SplitText(el, { type: "chars" }));
+
+    // Immediately hide all split characters on page load
+    splitTexts.forEach(split => {
+      gsap.set(split.chars, {
+        y: 20,
+        opacity: 0
+      });
     });
-  });
+  }
 
   let enterTweens = [];
   let leaveTweens = [];
@@ -195,67 +208,87 @@ document.querySelectorAll(".case_item_wrap").forEach((wrap) => {
     leaveTweens.forEach(t => t.kill());
     leaveTweens = [];
 
-    // Scale wrap and image
-    enterTweens.push(
-      gsap.to(wrap, {
-        scale: 0.98,
-        duration: 0.4,
-        ease: "power3.out"
-      }),
-      gsap.to(imgClip, {
-        scale: 1.10,
-        duration: 1.4,
-        ease: "power3.out"
-      })
-    );
+    // Scale down animation (if enabled)
+    if (hasScaleDown) {
+      enterTweens.push(
+        gsap.to(wrap, {
+          scale: 0.98,
+          duration: 0.4,
+          ease: "power3.out"
+        })
+      );
+    }
 
-    // Animate in each text block with stagger between blocks
-    splitTexts.forEach((split, i) => {
-      const tween = gsap.fromTo(split.chars, { y: 20, opacity: 0 },
-      {
-        y: 0,
-        opacity: 1,
-        duration: 0.4,
-        ease: "power2.out",
-        stagger: 0.03,
-        delay: i * 0.15
+    // Scale up animation (if enabled)
+    if (hasScaleUp && imgClip) {
+      enterTweens.push(
+        gsap.to(imgClip, {
+          scale: 1.10,
+          duration: 1.4,
+          ease: "power3.out"
+        })
+      );
+    }
+
+    // Text animation (if enabled)
+    if (hasTextIn && splitTexts.length) {
+      splitTexts.forEach((split, i) => {
+        const tween = gsap.fromTo(split.chars, { y: 20, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.4,
+          ease: "power2.out",
+          stagger: 0.03,
+          delay: i * 0.15
+        });
+        enterTweens.push(tween);
       });
-      enterTweens.push(tween);
-    });
+    }
   });
 
   wrap.addEventListener("mouseleave", () => {
-    // Kill enter tweens so they don’t conflict
+    // Kill enter tweens so they don't conflict
     enterTweens.forEach(t => t.kill());
     enterTweens = [];
 
-    // Scale wrap and image back
-    leaveTweens.push(
-      gsap.to(wrap, {
-        scale: 1,
-        duration: 0.5,
-        ease: "power2.inOut"
-      }),
-      gsap.to(imgClip, {
-        scale: 1,
-        duration: 0.7,
-        ease: "power2.inOut"
-      })
-    );
+    // Scale down animation reset (if enabled)
+    if (hasScaleDown) {
+      leaveTweens.push(
+        gsap.to(wrap, {
+          scale: 1,
+          duration: 0.5,
+          ease: "power2.inOut"
+        })
+      );
+    }
 
-    // Animate out each text block
-    splitTexts.forEach((split, i) => {
-      const tween = gsap.to(split.chars,
-      {
-        y: 20,
-        opacity: 0,
-        duration: 0.2,
-        ease: "power4.out",
-        stagger: 0.015,
-        delay: i * 0.05
+    // Scale up animation reset (if enabled)
+    if (hasScaleUp && imgClip) {
+      leaveTweens.push(
+        gsap.to(imgClip, {
+          scale: 1,
+          duration: 0.7,
+          ease: "power2.inOut"
+        })
+      );
+    }
+
+    // Text animation reset (if enabled)
+    if (hasTextIn && splitTexts.length) {
+      splitTexts.forEach((split, i) => {
+        const tween = gsap.to(split.chars,
+        {
+          y: 20,
+          opacity: 0,
+          duration: 0.2,
+          ease: "power4.out",
+          stagger: 0.015,
+          delay: i * 0.05
+        });
+        leaveTweens.push(tween);
       });
-      leaveTweens.push(tween);
-    });
+    }
   });
 });
 
