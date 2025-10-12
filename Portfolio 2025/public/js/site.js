@@ -9,34 +9,7 @@ window.Webflow.push(() => {
 gsap.registerPlugin(ScrollTrigger, SplitText);
 gsap.registerPlugin(ScrambleTextPlugin);
 
-//––––––– OSMO Staggering Button GPT
 
-function initButtonCharacterStagger() {
-  const offsetIncrement = 0.01;
-  const buttons = document.querySelectorAll('[data-button-animate-chars]');
-
-  if (!buttons.length) return; // Prevent error if no buttons found
-
-  buttons.forEach(button => {
-    const text = button.textContent || '';
-    button.innerHTML = '';
-
-    [...text].forEach((char, index) => {
-      const span = document.createElement('span');
-      span.textContent = char;
-      span.style.transitionDelay = `${index * offsetIncrement}s`;
-
-      if (char === ' ') {
-        span.style.whiteSpace = 'pre';
-      }
-
-      button.appendChild(span);
-    });
-  });
-}
-
-// Run immediately (Slater runs after DOM is ready)
-initButtonCharacterStagger();
 
 // –––––– OSMO Custom cursor
 function initDynamicCustomTextCursor() {
@@ -128,8 +101,9 @@ function initDynamicCustomTextCursor() {
 }
 
 // Initialize Dynamic Text Cursor (Edge Aware)
-
 initDynamicCustomTextCursor();
+
+
 
 // ––––––––– animate hero elements when case section enters GPT
 // Select all three hero_title elements
@@ -160,11 +134,15 @@ if (lines.length) {
   });
 }
 
+
+
 // ––––––––– Parallax using data-parallax
 document.querySelectorAll('[data-parallax]').forEach(el => {
-  gsap.fromTo(el, { yPercent: -10 },
+  const parallaxValue = parseFloat(el.getAttribute('data-parallax')) || 10;
+  
+  gsap.fromTo(el, { yPercent: -parallaxValue },
   {
-    yPercent: 10,
+    yPercent: parallaxValue,
     ease: "none",
     scrollTrigger: {
       trigger: el,
@@ -175,24 +153,11 @@ document.querySelectorAll('[data-parallax]').forEach(el => {
   });
 });
 
-// ––––––––––––––––––––– Home Cases Scroll Parallax Section GPT
-// Parallax scroll for each image
-document.querySelectorAll('.case_img_clip').forEach(el => {
-  gsap.fromTo(el, { yPercent: -10 },
-  {
-    yPercent: 10,
-    ease: "none",
-    scrollTrigger: {
-      trigger: el,
-      start: "top bottom",
-      end: "bottom top",
-      scrub: true
-    }
-  });
-});
 
-// fade in case items when scrolled into view
-document.querySelectorAll('.case_img_contain').forEach(el => {
+
+// !!! Fade In from bottom
+// Data-fade="case-card" – Fades in the object when scrolled into view, this is attacked to the link cards on the homepage for selected cases
+document.querySelectorAll('[data-fade="case-card"]').forEach(el => {
   gsap.fromTo(el, { opacity: 0 },
   {
     opacity: 1,
@@ -294,43 +259,7 @@ document.querySelectorAll(".case_item_wrap").forEach((wrap) => {
   });
 });
 
-//reusable text reaveal on lines
 
-document.querySelectorAll("[data-scroll-lines]").forEach((el) => {
-  // Split text into lines
-  const split = new SplitText(el, {
-    type: "lines",
-    linesClass: "line" // each line gets this class
-  });
-
-  // Wrap each line’s content in a div for clipping
-  split.lines.forEach((line) => {
-    const wrapper = document.createElement("div");
-    wrapper.style.display = "inline-block";
-    wrapper.style.transform = "translateY(100%)";
-    wrapper.style.willChange = "transform";
-
-    while (line.firstChild) {
-      wrapper.appendChild(line.firstChild);
-    }
-
-    line.appendChild(wrapper);
-  });
-
-  // Animate the inner wrappers (not the .line itself)
-  gsap.to(split.lines.map(line => line.firstChild), {
-    y: 0,
-    ease: "power4.out",
-    duration: 0.6,
-    stagger: 0.2,
-    scrollTrigger: {
-      trigger: el,
-      start: "top 70%",
-      toggleActions: "play reverse play reverse", // <- resets when out of view
-      markers: false // set to true for debugging
-    }
-  });
-});
 
 // Footer animation GPT
 
