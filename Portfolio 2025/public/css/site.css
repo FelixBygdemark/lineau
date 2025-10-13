@@ -124,3 +124,42 @@ body:has([data-cursor]:hover) .cursor {
   transform: scaleX(1) rotate(0.001deg);
   transition-delay: 0.3s;
 }
+
+
+/* New Osmo custom cursor */
+.cursor-marquee__card {
+    transition: all 0.4s cubic-bezier(.75, 0, .25, 1);
+    transform: translateY(0%) rotate(0.001deg);
+    clip-path: inset(calc(50% - 0.25em) round 50em);
+    will-change: clip-path;
+    opacity: 0;
+  }
+  
+  [data-cursor-marquee-status="active"] .cursor-marquee__card {
+    clip-path: inset(0 round 50em);
+    transform: translateY(-25%) rotate(0.001deg);
+  }
+  
+  /* Show cursor dot when script loaded */
+  [data-cursor-marquee-status="not-active"] .cursor-marquee__card,
+  [data-cursor-marquee-status="active"] .cursor-marquee__card{
+    opacity: 1;
+  }
+  
+  /* CSS Keyframe Animation */
+  @keyframes translateXCursor { 
+    to {
+      transform: translateX(-100%);
+    }
+  }
+  
+  .cursor-marquee__text-span {
+    animation: translateXCursor 10s linear infinite paused;
+    transition: opacity 0.15s ease-in-out 0.25s;
+    opacity: 0;
+  }
+  
+  [data-cursor-marquee-status="active"] .cursor-marquee__text-span {
+    transition: opacity 0.15s ease-in-out 0s;
+    opacity: 1;
+  }
