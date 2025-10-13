@@ -62,7 +62,7 @@ function initWipeReveal(root = document) {
     // ScrollTrigger: play on enter, reverse when leaving, mirrored on enterBack/leaveBack
     ScrollTrigger.create({
       trigger: wrap,
-      start: 'top bottom',     // when the top of wrap hits bottom of viewport
+      start: 'top 80%',     // when the top of wrap hits bottom of viewport
       end: 'bottom bottom',    // until the bottom of wrap hits bottom of viewport
       toggleActions: 'play reverse play reverse',
       onEnter: () => tl.play(),
