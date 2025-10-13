@@ -77,7 +77,7 @@ document.querySelectorAll('[data-scroll-skew]').forEach((el) => {
       // Velocity is px/sec. Normalize a bit so the effect feels natural.
       // Tweak the divisor (e.g. 60–150) to taste.
       const v = self.getVelocity();
-      const target = clamp(-maxDeg, maxDeg, (v / 200) ); // map velocity to degrees
+      const target = clamp(-maxDeg, maxDeg, (v / 800) ); // map velocity to degrees
 
       // Only "kick" if stronger than current (prevents tiny updates fighting ease-out)
       if (Math.abs(target) > Math.abs(proxy.skew)) {
