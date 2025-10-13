@@ -31,99 +31,78 @@ gsap.ticker.lagSmoothing(0);
 
 
 
-// –––––– OSMO Custom cursor - TEMPORARILY COMMENTED OUT
-/*
-function initDynamicCustomTextCursor() {
-  let cursorItem = document.querySelector(".cursor");
-  let cursorParagraph = cursorItem.querySelector("p");
-  let targets = document.querySelectorAll("[data-cursor]");
-  let xOffset = 6;
-  let yOffset = 140;
-  let cursorIsOnRight = false;
-  let currentTarget = null;
-  let lastText = '';
+// ––––––––– Skew-on-velocity utility
+const clamp = gsap.utils.clamp;
 
-  // Position cursor relative to actual cursor position on page load
-  gsap.set(cursorItem, { xPercent: xOffset, yPercent: yOffset });
+// Parse attribute formats:
+// data-scroll-skew="y:10"  -> axis y, max 10deg
+// data-scroll-skew="x:6"   -> axis x, max 6deg
+// data-scroll-skew="8"     -> axis y (default), max 8deg
+// data-scroll-skew=""      -> axis y, max 10deg (default)
+function parseSkewAttr(el) {
+  const raw = (el.getAttribute('data-scroll-skew') || '').trim();
+  let axis = 'y';
+  let maxDeg = 10;
 
-  // Use GSAP quick.to for a more performative tween on the cursor
-  let xTo = gsap.quickTo(cursorItem, "x", { ease: "power3" });
-  let yTo = gsap.quickTo(cursorItem, "y", { ease: "power3" });
+  if (!raw) return { axis, maxDeg };
 
-  // Function to get the width of the cursor element including a buffer
-  const getCursorEdgeThreshold = () => {
-    return cursorItem.offsetWidth + 16; // Cursor width + 16px margin
-  };
-
-  // On mousemove, call the quickTo functions to the actual cursor position
-  window.addEventListener("mousemove", e => {
-    let windowWidth = window.innerWidth;
-    let windowHeight = window.innerHeight;
-    let scrollY = window.scrollY;
-    let cursorX = e.clientX;
-    let cursorY = e.clientY + scrollY; // Adjust cursorY to account for scroll
-
-    // Default offsets
-    let xPercent = xOffset;
-    let yPercent = yOffset;
-
-    // Adjust X offset dynamically based on cursor width
-    let cursorEdgeThreshold = getCursorEdgeThreshold();
-    if (cursorX > windowWidth - cursorEdgeThreshold) {
-      cursorIsOnRight = true;
-      xPercent = -100;
-    } else {
-      cursorIsOnRight = false;
-    }
-
-    // Adjust Y offset if in the bottom 10% of the current viewport
-    if (cursorY > scrollY + windowHeight * 0.9) {
-      yPercent = -120;
-    }
-
-    if (currentTarget) {
-      let newText = currentTarget.getAttribute("data-cursor");
-      if (newText !== lastText) { // Only update if the text is different
-        cursorParagraph.innerHTML = newText;
-        lastText = newText;
-
-        // Recalculate edge awareness whenever the text changes
-        cursorEdgeThreshold = getCursorEdgeThreshold();
-      }
-    }
-
-    gsap.to(cursorItem, {
-      xPercent: xPercent,
-      yPercent: yPercent,
-      duration: 0.9,
-      ease: "power3"
-    });
-    xTo(cursorX);
-    yTo(cursorY - scrollY);
-  });
-
-  // Add a mouse enter listener for each link that has a data-cursor attribute
-  targets.forEach(target => {
-    target.addEventListener("mouseenter", () => {
-      currentTarget = target; // Set the current target
-
-      let newText = target.getAttribute("data-cursor");
-
-      // Update only if the text changes
-      if (newText !== lastText) {
-        cursorParagraph.innerHTML = newText;
-        lastText = newText;
-
-        // Recalculate edge awareness whenever the text changes
-        let cursorEdgeThreshold = getCursorEdgeThreshold();
-      }
-    });
-  });
+  if (raw.includes(':')) {
+    const [a, v] = raw.split(':').map(s => s.trim());
+    if (a === 'x' || a === 'y') axis = a;
+    const n = parseFloat(v);
+    if (!Number.isNaN(n)) maxDeg = n;
+  } else {
+    const n = parseFloat(raw);
+    if (!Number.isNaN(n)) maxDeg = n;
+  }
+  return { axis, maxDeg };
 }
 
-// Initialize Dynamic Text Cursor (Edge Aware)
-initDynamicCustomTextCursor();
-*/
+// Create one ScrollTrigger per element
+document.querySelectorAll('[data-scroll-skew]').forEach((el) => {
+  const { axis, maxDeg } = parseSkewAttr(el);
+
+  // Use a proxy object so we can animate back to 0
+  const proxy = { skew: 0 };
+  const setter = gsap.quickSetter(el, axis === 'x' ? 'skewX' : 'skewY', 'deg');
+
+  // Optional: avoid stacking transforms from other code by initializing skew to 0
+  gsap.set(el, { skewX: 0, skewY: 0 });
+
+  ScrollTrigger.create({
+    trigger: el,
+    start: 'top bottom',   // start affecting when the element enters the viewport
+    end: 'bottom top',     // stop affecting when it leaves
+    onUpdate(self) {
+      // Velocity is px/sec. Normalize a bit so the effect feels natural.
+      // Tweak the divisor (e.g. 60–150) to taste.
+      const v = self.getVelocity();
+      const target = clamp(-maxDeg, maxDeg, (v / 100) ); // map velocity to degrees
+
+      // Only "kick" if stronger than current (prevents tiny updates fighting ease-out)
+      if (Math.abs(target) > Math.abs(proxy.skew)) {
+        proxy.skew = target;
+        setter(proxy.skew);
+
+        // Smoothly ease back to 0
+        gsap.to(proxy, {
+          skew: 0,
+          duration: 0.6,
+          ease: 'power3.out',
+          overwrite: true,
+          onUpdate: () => setter(proxy.skew),
+        });
+      }
+    },
+    // If you want it active only while visible, keep the default toggleActions.
+    // For pinned/long sections you could add scrub, but not needed here.
+  });
+});
+
+// Refresh after images/fonts load (bounds change affect velocity timing)
+window.addEventListener('load', () => ScrollTrigger.refresh());
+
+
 
 
 
