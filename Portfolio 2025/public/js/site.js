@@ -31,6 +31,61 @@ gsap.ticker.lagSmoothing(0);
 
 
 
+// ––––––––– Reusable wipe reveal component (wipe_wrap -> wipe_bar)
+function initWipeReveal(root = document) {
+  const wraps = root.querySelectorAll('.wipe_wrap:not([data-wipe-inited])');
+
+  wraps.forEach((wrap) => {
+    wrap.setAttribute('data-wipe-inited', '1');
+
+    const bars = wrap.querySelectorAll('.wipe_bar');
+    if (!bars.length) return;
+
+    // Per-instance controls via data-attributes (all optional)
+    const duration = parseFloat(wrap.dataset.wipeDuration) || 0.9; // data-wipe-duration="0.9"
+    const stagger = parseFloat(wrap.dataset.wipeStagger) || 0.03;  // data-wipe-stagger="0.03"
+    const ease = wrap.dataset.wipeEase || 'power4.inOut';          // data-wipe-ease="power4.inOut"
+    const from = wrap.dataset.wipeFrom || 'end';                   // data-wipe-from="end" | "start" | "center"
+
+    // Ensure starting position for bars is at yPercent:0 (animation will move them out to -100)
+    // This overrides any initial CSS transform for a consistent reveal behavior.
+    gsap.set(bars, { yPercent: 0 });
+
+    const tl = gsap.timeline({ paused: true })
+      .to(bars, {
+        yPercent: -100,
+        duration,
+        ease,
+        stagger: { each: stagger, from }
+      });
+
+    // ScrollTrigger: play on enter, reverse when leaving, mirrored on enterBack/leaveBack
+    ScrollTrigger.create({
+      trigger: wrap,
+      start: 'top bottom',     // when the top of wrap hits bottom of viewport
+      end: 'bottom bottom',    // until the bottom of wrap hits bottom of viewport
+      toggleActions: 'play reverse play reverse',
+      onEnter: () => tl.play(),
+      onLeave: () => tl.reverse(),
+      onEnterBack: () => tl.play(),
+      onLeaveBack: () => tl.reverse(),
+      // markers: true,
+    });
+  });
+}
+
+
+// Expose for re-init on dynamic content (e.g., after Webflow IX/AJAX swaps)
+window.initWipeReveal = initWipeReveal;
+
+// Initialize once DOM/Webflow is ready
+window.Webflow ||= [];
+window.Webflow.push(() => {
+  initWipeReveal(document);
+});
+
+
+
 // –––––– OSMO Custom cursor
 function initDynamicCustomTextCursor() {
   let cursorItem = document.querySelector(".cursor");
