@@ -400,7 +400,7 @@ document.querySelectorAll("[stagger-link]").forEach(link => {
 // !!! Osmo new custom cursor
 function initCursorMarqueeEffect() {
   const hoverOutDelay = 0.4;
-  const followDuration = 0.4;
+  const followDuration = 1.5;
   const speedMultiplier = 5;
 
   const cursor = document.querySelector('[data-cursor-marquee-status]');
