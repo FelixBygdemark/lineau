@@ -460,6 +460,25 @@ document.addEventListener('DOMContentLoaded', function() {
   // - data-bend-mode="elastic"  → "elastic" | "ribbon" | "smile"
   // - data-bend-target=".inner" → optional selector inside element to mask
   let bendUid = 0;
+  let bendDefsSvg = null;
+
+  function ensureBendDefsContainer() {
+    if (bendDefsSvg) return bendDefsSvg;
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', '0');
+    svg.setAttribute('height', '0');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.style.position = 'absolute';
+    svg.style.width = '0';
+    svg.style.height = '0';
+    svg.style.overflow = 'hidden';
+    const defs = document.createElementNS(svgNS, 'defs');
+    svg.appendChild(defs);
+    document.body.appendChild(svg);
+    bendDefsSvg = svg;
+    return bendDefsSvg;
+  }
 
   function curvedRectPath(width, height, bendTop = 0, bendBottom = 0) {
     const t = bendTop;
@@ -477,30 +496,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const maxAmp = parseFloat(el.getAttribute('data-bend')) || 24;
     const mode = (el.getAttribute('data-bend-mode') || 'elastic').toLowerCase();
     const targetSel = el.getAttribute('data-bend-target');
-    const target = targetSel ? el.querySelector(targetSel) : el;
+    // Prefer explicit target; otherwise try common media wrappers in your structure
+    let target = targetSel ? el.querySelector(targetSel) : null;
+    if (!target) target = el.querySelector('.case_media_parallax');
+    if (!target) target = el.querySelector('.case_media_wrap');
+    if (!target) target = el; // fallback
     if (!target) return;
 
     const id = `bend-mask-${++bendUid}`;
     const svgNS = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('width', '0');
-    svg.setAttribute('height', '0');
-    svg.setAttribute('aria-hidden', 'true');
-
-    const defs = document.createElementNS(svgNS, 'defs');
+    const defsHost = ensureBendDefsContainer().querySelector('defs');
     const mask = document.createElementNS(svgNS, 'mask');
     mask.setAttribute('id', id);
     mask.setAttribute('maskUnits', 'userSpaceOnUse');
+    // Use luminance to increase cross-browser reliability
+    mask.setAttribute('maskContentUnits', 'userSpaceOnUse');
+    mask.setAttribute('mask-type', 'luminance');
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('fill', 'white');
     mask.appendChild(path);
-    defs.appendChild(mask);
-    svg.appendChild(defs);
-    target.appendChild(svg); // keep mask close to target
+    defsHost.appendChild(mask);
 
     // apply mask to target
     target.style.mask = `url(#${id})`;
-    target.style.webkitMask = `url(#${id})`;
+    target.style.webkitMaskImage = `url(#${id})`;
+    target.style.webkitMaskRepeat = 'no-repeat';
+    target.style.webkitMaskSize = '100% 100%';
 
     const state = { top: 0, bottom: 0 };
     const updatePath = () => {
