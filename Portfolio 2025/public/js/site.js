@@ -460,25 +460,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // - data-bend-mode="elastic"  → "elastic" | "ribbon" | "smile"
   // - data-bend-target=".inner" → optional selector inside element to mask
   let bendUid = 0;
-  let bendDefsSvg = null;
-
-  function ensureBendDefsContainer() {
-    if (bendDefsSvg) return bendDefsSvg;
-    const svgNS = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('width', '0');
-    svg.setAttribute('height', '0');
-    svg.setAttribute('aria-hidden', 'true');
-    svg.style.position = 'absolute';
-    svg.style.width = '0';
-    svg.style.height = '0';
-    svg.style.overflow = 'hidden';
-    const defs = document.createElementNS(svgNS, 'defs');
-    svg.appendChild(defs);
-    document.body.appendChild(svg);
-    bendDefsSvg = svg;
-    return bendDefsSvg;
-  }
 
   function curvedRectPath(width, height, bendTop = 0, bendBottom = 0) {
     const t = bendTop;
@@ -496,16 +477,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const maxAmp = parseFloat(el.getAttribute('data-bend')) || 24;
     const mode = (el.getAttribute('data-bend-mode') || 'elastic').toLowerCase();
     const targetSel = el.getAttribute('data-bend-target');
-    // Prefer explicit target; otherwise try common media wrappers in your structure
-    let target = targetSel ? el.querySelector(targetSel) : null;
-    if (!target) target = el.querySelector('.case_media_parallax');
-    if (!target) target = el.querySelector('.case_media_wrap');
-    if (!target) target = el; // fallback
+    // Attach mask to the case_card itself by default for full coverage
+    // You can override with data-bend-target if you want to mask a child
+    let target = targetSel ? el.querySelector(targetSel) : el;
     if (!target) return;
 
     const id = `bend-mask-${++bendUid}`;
     const svgNS = 'http://www.w3.org/2000/svg';
-    const defsHost = ensureBendDefsContainer().querySelector('defs');
+    // Create a local <svg><defs><mask><path/></mask></defs></svg> inside the component
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', '0');
+    svg.setAttribute('height', '0');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.style.position = 'absolute';
+    svg.style.width = '0';
+    svg.style.height = '0';
+    svg.style.overflow = 'hidden';
+
+    const defs = document.createElementNS(svgNS, 'defs');
     const mask = document.createElementNS(svgNS, 'mask');
     mask.setAttribute('id', id);
     mask.setAttribute('maskUnits', 'userSpaceOnUse');
@@ -515,24 +504,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('fill', 'white');
     mask.appendChild(path);
-    defsHost.appendChild(mask);
+    defs.appendChild(mask);
+    svg.appendChild(defs);
+    el.appendChild(svg);
 
     // apply mask to target
     target.style.mask = `url(#${id})`;
-    target.style.webkitMaskImage = `url(#${id})`;
+    target.style.maskRepeat = 'no-repeat';
+    target.style.maskSize = '100% 100%';
+    // WebKit
+    target.style.webkitMask = `url(#${id})`;
     target.style.webkitMaskRepeat = 'no-repeat';
     target.style.webkitMaskSize = '100% 100%';
 
     const state = { top: 0, bottom: 0 };
     const updatePath = () => {
-      const w = target.offsetWidth || 1;
-      const h = target.offsetHeight || 1;
+      const w = el.offsetWidth || target.offsetWidth || 1;
+      const h = el.offsetHeight || target.offsetHeight || 1;
       path.setAttribute('d', curvedRectPath(w, h, state.top, state.bottom));
     };
 
     // responsive updates
     const ro = new ResizeObserver(updatePath);
-    ro.observe(target);
+    ro.observe(el);
     updatePath();
 
     ScrollTrigger.create({
