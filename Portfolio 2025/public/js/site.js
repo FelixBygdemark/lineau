@@ -451,3 +451,98 @@ function initCursorMarqueeEffect() {
 document.addEventListener('DOMContentLoaded', function() {
   initCursorMarqueeEffect();
 });
+
+
+// !!! Bend SVG mask on scroll – used for case section on homepage
+  // Elements with [data-bend] will get a velocity-reactive mask bend.
+  // Optional attributes:
+  // - data-bend="24"            → max amplitude in px (default 24)
+  // - data-bend-mode="elastic"  → "elastic" | "ribbon" | "smile"
+  // - data-bend-target=".inner" → optional selector inside element to mask
+  let bendUid = 0;
+
+  function curvedRectPath(width, height, bendTop = 0, bendBottom = 0) {
+    const t = bendTop;
+    const b = bendBottom;
+    return [
+      `M0,0`,
+      `C${(width*0.33).toFixed(2)},${t.toFixed(2)} ${(width*0.66).toFixed(2)},${t.toFixed(2)} ${width.toFixed(2)},0`,
+      `L${width.toFixed(2)},${height.toFixed(2)}`,
+      `C${(width*0.66).toFixed(2)},${(height+b).toFixed(2)} ${(width*0.33).toFixed(2)},${(height+b).toFixed(2)} 0,${height.toFixed(2)}`,
+      `Z`
+    ].join(" ");
+  }
+
+  function initBendFor(el) {
+    const maxAmp = parseFloat(el.getAttribute('data-bend')) || 24;
+    const mode = (el.getAttribute('data-bend-mode') || 'elastic').toLowerCase();
+    const targetSel = el.getAttribute('data-bend-target');
+    const target = targetSel ? el.querySelector(targetSel) : el;
+    if (!target) return;
+
+    const id = `bend-mask-${++bendUid}`;
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', '0');
+    svg.setAttribute('height', '0');
+    svg.setAttribute('aria-hidden', 'true');
+
+    const defs = document.createElementNS(svgNS, 'defs');
+    const mask = document.createElementNS(svgNS, 'mask');
+    mask.setAttribute('id', id);
+    mask.setAttribute('maskUnits', 'userSpaceOnUse');
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('fill', 'white');
+    mask.appendChild(path);
+    defs.appendChild(mask);
+    svg.appendChild(defs);
+    target.appendChild(svg); // keep mask close to target
+
+    // apply mask to target
+    target.style.mask = `url(#${id})`;
+    target.style.webkitMask = `url(#${id})`;
+
+    const state = { top: 0, bottom: 0 };
+    const updatePath = () => {
+      const w = target.offsetWidth || 1;
+      const h = target.offsetHeight || 1;
+      path.setAttribute('d', curvedRectPath(w, h, state.top, state.bottom));
+    };
+
+    // responsive updates
+    const ro = new ResizeObserver(updatePath);
+    ro.observe(target);
+    updatePath();
+
+    ScrollTrigger.create({
+      trigger: el,
+      start: 'top bottom',
+      end: 'bottom top',
+      onUpdate(self) {
+        const velocity = self.getVelocity(); // px/sec
+        const amp = clamp(-maxAmp, maxAmp, velocity / 120); // lower divisor → stronger
+
+        if (mode === 'ribbon') {
+          state.top = amp; state.bottom = amp;
+        } else if (mode === 'smile') {
+          state.top = 0;   state.bottom = amp;
+        } else { // elastic
+          state.top = amp; state.bottom = -amp;
+        }
+
+        updatePath();
+
+        // ease back to flat
+        gsap.to(state, {
+          top: 0,
+          bottom: 0,
+          duration: 0.6,
+          ease: 'power3.out',
+          overwrite: true,
+          onUpdate: updatePath
+        });
+      }
+    });
+  }
+
+  document.querySelectorAll('[data-bend]').forEach(initBendFor);
