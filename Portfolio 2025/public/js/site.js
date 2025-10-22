@@ -491,3 +491,38 @@ document.addEventListener('DOMContentLoaded', () => {
   initFooterParallax();
 });
 
+// ---- 3D flip per letter ----
+(function initLogoFlip(){
+  const wrap = document.querySelector('.footer_logo_wrap');
+  if (!wrap) return;
+
+  const svg  = wrap.querySelector('svg');
+  const chars = svg ? svg.querySelectorAll('.logo-char') : null;
+  if (!chars || !chars.length) return;
+
+  // start folded down behind the baseline
+  gsap.set(chars, { rotateX: 90, yPercent: 6, force3D: true });
+
+  gsap.to(chars, {
+    rotateX: 0,
+    yPercent: 0,
+    ease: "power3.out",
+    stagger: { each: 0.05, from: "start" },
+    scrollTrigger: {
+      trigger: wrap,
+      start: "top 80%",
+      end: "bottom 60%",
+      scrub: true,
+      fastScrollEnd: true,
+      onRefresh: self => self.update()
+    }
+  });
+
+  // keep ST fresh when fonts/images/layout change
+  requestAnimationFrame(() => ScrollTrigger.refresh());
+})();
+
+// Respect reduced motion
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  ScrollTrigger.getAll().forEach(st => st.disable());
+}

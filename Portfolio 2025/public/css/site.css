@@ -163,3 +163,27 @@ body:has([data-cursor]:hover) .cursor {
     transition: opacity 0.15s ease-in-out 0s;
     opacity: 1;
   }
+
+  /* add once globally */
+[data-scroll-skew] {
+    transform-origin: center center;
+    will-change: transform;
+    backface-visibility: hidden; /* reduce text shimmer while skewing */
+  }
+
+
+  /* Lineau footer logo */
+  .footer_logo_wrap{
+    perspective: 1200px;            /* 3D depth for the flip */
+    overflow: visible;
+  }
+  .footer_logo_wrap .logo-svg{
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .footer_logo_wrap .logo-char{
+    transform-box: fill-box;        /* use glyph’s own bounds */
+    transform-origin: 50% 100%;     /* bottom center of each letter */
+    will-change: transform;         /* smooth 3D */
+  }
