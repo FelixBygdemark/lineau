@@ -1,0 +1,215 @@
+
+
+
+/* Custom Cursor */
+body:has([data-cursor]:hover) .cursor { 
+  opacity: 1; 
+}
+
+.button:hover .button-bg{
+  transform: scale(0.95);
+}
+
+/* GPT reveal lines on scroll */
+.reveal-block .line {
+  display: block;
+  overflow: hidden; /* clip children */
+}
+
+.reveal-block .line > div {
+  transform: translateY(100%);
+  display: inline-block;
+}
+
+/* Ilja stagger text-links */
+  a[stagger-link] [stagger-link-text]{
+  	text-shadow: 0px 1em 0px var(--swatch--dark-900); 
+  }
+  a[stagger-link] [stagger-link-text="beige"]{
+  	text-shadow: 0px 1em 0px var(--beige); 
+  }
+  a[stagger-link] [stagger-link-text="orange"]{
+  	text-shadow: 0px 1em 0px var(--orange); 
+  }
+
+/* OSMO link underline */
+.underline-link::before,
+.underline-link.is--alt::before,
+.underline-link.is--alt::after{
+  content: "";
+  position: absolute;
+  bottom: 0em;
+  left: 0;
+  width: 100%;
+  height: 0.0625rem;
+  background-color: #ffffff;
+  transition: transform 0.735s cubic-bezier(0.625, 0.05, 0, 1);
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+}
+
+.underline-link:hover::before {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+}
+
+/* Alt */
+.underline-link.is--alt::before {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+  transition-delay: 0.3s;
+}
+
+.underline-link.is--alt:hover::before {
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+  transition-delay: 0s;
+}
+
+.underline-link.is--alt::after {
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+  transition-delay: 0s;
+}
+
+.underline-link.is--alt:hover::after {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+  transition-delay: 0.3s;
+}
+
+
+/* OSMO link underline 2 */
+.underline-link-2::before,
+.underline-link-2.is--alt::before,
+.underline-link-2.is--alt::after {
+  content: "";
+  position: absolute;
+  bottom: 0em;
+  left: 0;
+  width: 100%;
+  height: 0.0625rem;
+  background-color: #270029;
+  transition: transform 0.735s cubic-bezier(0.625, 0.05, 0, 1);
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+}
+
+.underline-link-2:hover::before {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+}
+
+/* Alt */
+.underline-link-2.is--alt::before {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+  transition-delay: 0.3s;
+}
+
+.underline-link-2.is--alt:hover::before {
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+  transition-delay: 0s;
+}
+
+.underline-link-2.is--alt::after {
+  transform-origin: right;
+  transform: scaleX(0) rotate(0.001deg);
+  transition-delay: 0s;
+}
+
+.underline-link-2.is--alt:hover::after {
+  transform-origin: left;
+  transform: scaleX(1) rotate(0.001deg);
+  transition-delay: 0.3s;
+}
+
+
+/* New Osmo custom cursor */
+.cursor-marquee__card {
+    transition: all 0.4s cubic-bezier(.75, 0, .25, 1);
+    transform: translateY(0%) rotate(0.001deg);
+    clip-path: inset(calc(50% - 0.25em) round 50em);
+    will-change: clip-path;
+    opacity: 0;
+  }
+  
+  [data-cursor-marquee-status="active"] .cursor-marquee__card {
+    clip-path: inset(0 round 50em);
+    transform: translateY(-25%) rotate(0.001deg);
+  }
+  
+  /* Show cursor dot when script loaded */
+  [data-cursor-marquee-status="not-active"] .cursor-marquee__card,
+  [data-cursor-marquee-status="active"] .cursor-marquee__card{
+    opacity: 1;
+  }
+  
+  /* CSS Keyframe Animation */
+  @keyframes translateXCursor { 
+    to {
+      transform: translateX(-100%);
+    }
+  }
+  
+  .cursor-marquee__text-span {
+    animation: translateXCursor 10s linear infinite paused;
+    transition: opacity 0.15s ease-in-out 0.25s;
+    opacity: 0;
+  }
+  
+  [data-cursor-marquee-status="active"] .cursor-marquee__text-span {
+    transition: opacity 0.15s ease-in-out 0s;
+    opacity: 1;
+  }
+
+  /* add once globally */
+[data-scroll-skew] {
+    transform-origin: center center;
+    will-change: transform;
+    backface-visibility: hidden; /* reduce text shimmer while skewing */
+  }
+
+/* Magnetic button */
+.btn-magnetic__click .btn-magnetic__text-p {
+  transition: all 0.6s cubic-bezier(0.625, 0.05, 0, 1);
+  transform: translateY(0%) rotate(0.001deg);
+}
+.btn-magnetic__click:hover .btn-magnetic__text-p {
+  transform: translateY(-100%) rotate(0.001deg);
+}
+
+
+/* footer infinite marquee */
+  
+.tiles {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	height: 150vh;
+	display: flex;
+	opacity: 0.8;
+	flex-direction: column;
+	justify-content: center;
+	transform: translate3d(-50%,-50%, 0) rotate(22.5deg);
+}
+
+.tiles__line {
+	display: flex;
+	transform: translateX(25%);
+	animation: runner 12s linear infinite;
+}
+
+.tiles__line:nth-child(2) {
+	animation-duration: 16s;
+}
+
+.tiles__line:nth-child(3) {
+	animation-duration: 20s;
+}
+
+@keyframes runner {
+	to {
+		transform: translateX(-25%);
+	}
