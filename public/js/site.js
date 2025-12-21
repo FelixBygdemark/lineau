@@ -946,3 +946,47 @@ document.addEventListener('DOMContentLoaded', function() {
   initBunnyPlayerBackground();
 
 });
+
+
+function initNavCharStagger() {
+  const links = document.querySelectorAll('[data-nav-stagger]');
+
+  links.forEach(link => {
+    if (link.dataset.splitInit) return;
+    link.dataset.splitInit = 'true';
+
+    const split = new SplitText(link, {
+      type: 'chars',
+      charsClass: 'char'
+    });
+
+    // Reset initial position
+    gsap.set(split.chars, {
+      yPercent: 0
+    });
+
+    link.addEventListener('mouseenter', () => {
+      gsap.to(split.chars, {
+        yPercent: -130,
+        duration: 0.5,
+        ease: 'power4.out',
+        stagger: {
+          each: 0.035
+        }
+      });
+    });
+
+    link.addEventListener('mouseleave', () => {
+      gsap.to(split.chars, {
+        yPercent: 0,
+        duration: 0.35,
+        ease: 'power3.inOut',
+        stagger: {
+          each: 0.02
+        }
+      });
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initNavCharStagger);

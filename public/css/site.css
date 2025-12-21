@@ -10,6 +10,20 @@
   -ms-overflow-style: none;  /* IE and Edge */
 }
 
+/* Nav stagger */
+[data-nav-stagger] {
+  display: inline-block;
+  overflow: hidden;
+}
+
+[data-nav-stagger] .char {
+  display: inline-block;
+  position: relative;
+  text-shadow: 0 1.3em currentColor;
+  transform: translateY(0) rotate(0.001deg);
+  will-change: transform;
+}
+
 /* Custom Cursor */
 body:has([data-cursor]:hover) .cursor { 
   opacity: 1; 
