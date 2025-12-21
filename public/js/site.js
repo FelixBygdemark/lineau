@@ -967,7 +967,7 @@ function initNavCharStagger() {
 
     link.addEventListener('mouseenter', () => {
       gsap.to(split.chars, {
-        yPercent: -130,
+        yPercent: -100,
         duration: 0.5,
         ease: 'power4.out',
         stagger: {
