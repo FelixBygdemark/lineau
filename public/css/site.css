@@ -1,5 +1,14 @@
 
+/* Hide scrollbar for Chrome, Safari, and Edge */
+.element::-webkit-scrollbar {
+  display: none;
+}
 
+/* Hide scrollbar for Firefox */
+.element {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
 
 /* Custom Cursor */
 body:has([data-cursor]:hover) .cursor { 
