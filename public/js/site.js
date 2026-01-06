@@ -621,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMagneticEffect();
 });
 
+// Bunny player background
 function initBunnyPlayerBackground() {
 
   document.querySelectorAll('[data-bunny-background-init]').forEach(function(player) {
@@ -947,7 +948,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
-
+//nav text-link stagger
 function initNavCharStagger() {
   const links = document.querySelectorAll('[data-nav-stagger]');
 
@@ -971,7 +972,7 @@ function initNavCharStagger() {
         duration: 0.5,
         ease: 'power4.out',
         stagger: {
-          each: 0.035
+          amount: 0.035
         }
       });
     });
