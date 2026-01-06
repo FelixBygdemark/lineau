@@ -970,9 +970,9 @@ function initNavCharStagger() {
       gsap.to(split.chars, {
         yPercent: -100,
         duration: 0.6,
-        ease: 'power4.inOut',
+        ease: 'power4.out',
         stagger: {
-          amount: 0.05
+          each: 0.01
         }
       });
     });
@@ -983,7 +983,7 @@ function initNavCharStagger() {
         duration: 0.4,
         ease: 'power4.inOut',
         stagger: {
-          amount: 0.05
+          each: 0.01
         }
       });
     });
