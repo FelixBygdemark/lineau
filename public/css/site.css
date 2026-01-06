@@ -12,6 +12,7 @@
 
 /* Nav stagger */
 [data-nav-stagger] {
+  line-height: 1;
   display: inline-block;
   overflow: hidden;
 }
