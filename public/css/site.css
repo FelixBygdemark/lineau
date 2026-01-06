@@ -19,7 +19,7 @@
 [data-nav-stagger] .char {
   display: inline-block;
   position: relative;
-  text-shadow: 0 1.4em currentColor;
+  text-shadow: 0 1.3em currentColor;
   transform: translateY(0) rotate(0.001deg);
   will-change: transform;
 }
