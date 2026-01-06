@@ -969,10 +969,10 @@ function initNavCharStagger() {
     link.addEventListener('mouseenter', () => {
       gsap.to(split.chars, {
         yPercent: -100,
-        duration: 0.5,
-        ease: 'back.out(1.7)',
+        duration: 0.6,
+        ease: 'power4.inOut',
         stagger: {
-          amount: 0.3
+          each: 0.003
         }
       });
     });
@@ -980,10 +980,10 @@ function initNavCharStagger() {
     link.addEventListener('mouseleave', () => {
       gsap.to(split.chars, {
         yPercent: 0,
-        duration: 0.35,
-        ease: 'power3.inOut',
+        duration: 0.4,
+        ease: 'power4.inOut',
         stagger: {
-          amount: 0.3
+          each: 0.003
         }
       });
     });
