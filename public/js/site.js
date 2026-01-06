@@ -972,7 +972,7 @@ function initNavCharStagger() {
         duration: 0.6,
         ease: 'power4.inOut',
         stagger: {
-          each: 0.003
+          amount: 0.05
         }
       });
     });
@@ -983,7 +983,7 @@ function initNavCharStagger() {
         duration: 0.4,
         ease: 'power4.inOut',
         stagger: {
-          each: 0.003
+          amount: 0.05
         }
       });
     });
