@@ -948,6 +948,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
+
+
+
+
 //nav text-link stagger
 function initNavCharStagger() {
   const links = document.querySelectorAll('[data-nav-stagger]');
@@ -991,3 +995,129 @@ function initNavCharStagger() {
 }
 
 document.addEventListener('DOMContentLoaded', initNavCharStagger);
+
+
+
+
+
+// ––––––––– Sticky Title & Meta Animation (Data-Driven)
+// Uses data-sticky-title and data-sticky-meta on chapters
+// Updates [data-sticky-target="title"] and [data-sticky-target="meta"] elements
+
+function initStickyTitleMeta() {
+  const stickyTitleEl = document.querySelector('[data-sticky-target="title"]');
+  const stickyMetaEl = document.querySelector('[data-sticky-target="meta"]');
+
+  // If sticky elements don't exist, exit early
+  if (!stickyTitleEl || !stickyMetaEl) return;
+
+  let currentTitleSplit = null;
+  let currentMetaSplit = null;
+
+  let currentTitleText = "";
+  let currentMetaText = "";
+
+  // Core update function: OUT → swap → IN
+  function updateStickyText({ title, meta }) {
+    const tl = gsap.timeline({ defaults: { overwrite: true } });
+
+    /* ---------- OUT ---------- */
+
+    if (currentTitleSplit) {
+      tl.to(currentTitleSplit.chars, {
+        yPercent: -120,
+        opacity: 0,
+        stagger: 0.025,
+        duration: 0.35,
+        ease: "power2.in"
+      }, 0);
+    }
+
+    if (currentMetaSplit) {
+      tl.to(currentMetaSplit.chars, {
+        yPercent: -80,
+        opacity: 0,
+        stagger: 0.02,
+        duration: 0.25,
+        ease: "power2.in"
+      }, 0);
+    }
+
+    /* ---------- SWAP ---------- */
+
+    tl.add(() => {
+      // Clean up old splits
+      if (currentTitleSplit) currentTitleSplit.revert();
+      if (currentMetaSplit) currentMetaSplit.revert();
+
+      // Set new text
+      stickyTitleEl.textContent = title;
+      stickyMetaEl.textContent = meta;
+
+      // Split again
+      currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+      currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+
+      // Prep IN state
+      gsap.set([...currentTitleSplit.chars, ...currentMetaSplit.chars], {
+        yPercent: 120,
+        opacity: 0
+      });
+    });
+
+    /* ---------- IN ---------- */
+
+    tl.to(currentMetaSplit.chars, {
+      yPercent: 0,
+      opacity: 1,
+      stagger: 0.02,
+      duration: 0.35,
+      ease: "power3.out"
+    }, "+=0.05");
+
+    tl.to(currentTitleSplit.chars, {
+      yPercent: 0,
+      opacity: 1,
+      stagger: 0.04,
+      duration: 0.6,
+      ease: "power4.out"
+    }, "-=0.15");
+  }
+
+  // ScrollTrigger setup - data-driven, clean
+  gsap.utils.toArray('[data-sticky-title]').forEach(chapter => {
+    ScrollTrigger.create({
+      trigger: chapter,
+      start: "top center",
+      end: "bottom center",
+
+      onEnter: () => {
+        updateStickyText({
+          title: chapter.dataset.stickyTitle,
+          meta: chapter.dataset.stickyMeta || ""
+        });
+      },
+
+      onEnterBack: () => {
+        updateStickyText({
+          title: chapter.dataset.stickyTitle,
+          meta: chapter.dataset.stickyMeta || ""
+        });
+      }
+    });
+  });
+
+  // Initial state - set first chapter's content without animation
+  const firstChapter = document.querySelector('[data-sticky-title]');
+  if (firstChapter) {
+    stickyTitleEl.textContent = firstChapter.dataset.stickyTitle;
+    stickyMetaEl.textContent = firstChapter.dataset.stickyMeta || "";
+
+    currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+    currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+  }
+}
+
+// Initialize Sticky Title & Meta
+document.addEventListener('DOMContentLoaded', initStickyTitleMeta);
+
