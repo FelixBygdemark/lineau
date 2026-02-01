@@ -145,7 +145,7 @@ document.querySelectorAll('[data-fade="case-card"]').forEach(el => {
 });
 
 //Case card hover GPT
-document.querySelectorAll(".case_card").forEach((wrap) => {
+document.querySelectorAll(".home_case_card").forEach((wrap) => {
   const imgClip = wrap.querySelector(".case_media_parallax");
   const textBlocks = wrap.querySelectorAll(".case_text");
 
