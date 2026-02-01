@@ -1018,17 +1018,11 @@ function initStickyTitleMeta() {
   let currentMetaSplit = null;
 
   // Core update function: OUT → swap → IN
-  function updateStickyText({ title, meta, skipOut = false }) {
-    if (!title && !meta) {
-      console.warn('updateStickyText called with no title or meta');
-      return;
-    }
-
+  function updateStickyText({ title, meta }) {
     const tl = gsap.timeline({ defaults: { overwrite: true } });
 
     /* ---------- OUT ---------- */
-
-    if (!skipOut && currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
+    if (currentTitleSplit && currentTitleSplit.chars) {
       tl.to(currentTitleSplit.chars, {
         yPercent: -120,
         stagger: 0.025,
@@ -1037,7 +1031,7 @@ function initStickyTitleMeta() {
       }, 0);
     }
 
-    if (!skipOut && currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
+    if (currentMetaSplit && currentMetaSplit.chars) {
       tl.to(currentMetaSplit.chars, {
         yPercent: -80,
         stagger: 0.02,
@@ -1047,78 +1041,62 @@ function initStickyTitleMeta() {
     }
 
     /* ---------- SWAP ---------- */
-
     tl.add(() => {
       // Clean up old splits
       if (currentTitleSplit) {
         try {
           currentTitleSplit.revert();
-        } catch (e) {
-          // Ignore revert errors
-        }
+        } catch (e) {}
       }
       if (currentMetaSplit) {
         try {
           currentMetaSplit.revert();
-        } catch (e) {
-          // Ignore revert errors
-        }
+        } catch (e) {}
       }
 
       // Set new text
-      if (title !== undefined) stickyTitleEl.textContent = title || "";
-      if (meta !== undefined) stickyMetaEl.textContent = meta || "";
+      stickyTitleEl.textContent = title || "";
+      stickyMetaEl.textContent = meta || "";
 
-      // Split again (only if there's actual text)
-      try {
-        if (title && title.trim().length > 0) {
-          currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
-        } else {
-          currentTitleSplit = null;
-        }
-        if (meta && meta.trim().length > 0) {
-          currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
-        } else {
-          currentMetaSplit = null;
-        }
+      // Split new text
+      if (title && title.trim()) {
+        currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+      } else {
+        currentTitleSplit = null;
+      }
 
-        // Prep IN state - only yPercent, no opacity
-        const charsToAnimate = [];
-        if (currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
-          charsToAnimate.push(...currentTitleSplit.chars);
-        }
-        if (currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
-          charsToAnimate.push(...currentMetaSplit.chars);
-        }
+      if (meta && meta.trim()) {
+        currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+      } else {
+        currentMetaSplit = null;
+      }
 
-        if (charsToAnimate.length > 0) {
-          gsap.set(charsToAnimate, {
-            yPercent: 120
-          });
-        }
-      } catch (e) {
-        console.warn('Error creating splits:', e);
+      // Set initial position for IN animation
+      if (currentTitleSplit && currentTitleSplit.chars) {
+        gsap.set(currentTitleSplit.chars, { yPercent: 120 });
+      }
+      if (currentMetaSplit && currentMetaSplit.chars) {
+        gsap.set(currentMetaSplit.chars, { yPercent: 120 });
       }
     });
 
     /* ---------- IN ---------- */
-
-    if (currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
+    if (currentMetaSplit && currentMetaSplit.chars) {
       tl.to(currentMetaSplit.chars, {
         yPercent: 0,
         stagger: 0.02,
         duration: 0.35,
         ease: "power3.out"
-      }, skipOut ? "+=0.1" : "+=0.05");
+      }, "+=0.05");
     }
 
-    if (currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
+    if (currentTitleSplit && currentTitleSplit.chars) {
       tl.to(currentTitleSplit.chars, {
         yPercent: 0,
         stagger: 0.04,
         duration: 0.6,
         ease: "power4.out"
-      }, skipOut ? "+=0.1" : "-=0.15");
+      }, "-=0.15");
     }
   }
 
@@ -1130,43 +1108,38 @@ function initStickyTitleMeta() {
     return;
   }
 
+  // Set initial text from first chapter (visible, no animation)
   const firstChapter = chapters[0];
-
-  // Initial state - set first chapter's content (visible, no hiding)
   if (firstChapter) {
-    const initialTitle = firstChapter.dataset.stickyTitle || "";
-    const initialMeta = firstChapter.dataset.stickyMeta || "";
+    stickyTitleEl.textContent = firstChapter.dataset.stickyTitle || "";
+    stickyMetaEl.textContent = firstChapter.dataset.stickyMeta || "";
 
-    // Set text content - visible from start (Webflow handles FOUC)
-    stickyTitleEl.textContent = initialTitle;
-    stickyMetaEl.textContent = initialMeta;
-
-    // Create initial splits but don't hide them
-    try {
-      if (initialTitle && initialTitle.trim().length > 0) {
-        currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+    // Create initial splits and ensure they're visible (yPercent: 0)
+    if (stickyTitleEl.textContent.trim()) {
+      currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+      if (currentTitleSplit.chars) {
+        gsap.set(currentTitleSplit.chars, { yPercent: 0, clearProps: "all" });
       }
-      if (initialMeta && initialMeta.trim().length > 0) {
-        currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+    }
+    if (stickyMetaEl.textContent.trim()) {
+      currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+      if (currentMetaSplit.chars) {
+        gsap.set(currentMetaSplit.chars, { yPercent: 0, clearProps: "all" });
       }
-    } catch (e) {
-      console.warn('Error setting initial state:', e);
     }
   }
 
-  // ScrollTrigger setup - data-driven, clean
-  // Animation starts when chapter reaches center viewport
+  // ScrollTrigger setup - trigger when top of chapter enters viewport
   chapters.forEach(chapter => {
     ScrollTrigger.create({
       trigger: chapter,
-      start: "top center",
-      end: "bottom center",
+      start: "top bottom",
+      end: "bottom top",
 
       onEnter: () => {
         updateStickyText({
           title: chapter.dataset.stickyTitle || "",
-          meta: chapter.dataset.stickyMeta || "",
-          skipOut: chapter === firstChapter
+          meta: chapter.dataset.stickyMeta || ""
         });
       },
 
