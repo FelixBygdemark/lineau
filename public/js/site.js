@@ -1018,12 +1018,12 @@ function initStickyTitleMeta() {
   let currentMetaText = "";
 
   // Core update function: OUT → swap → IN
-  function updateStickyText({ title, meta }) {
+  function updateStickyText({ title, meta, skipOut = false }) {
     const tl = gsap.timeline({ defaults: { overwrite: true } });
 
     /* ---------- OUT ---------- */
 
-    if (currentTitleSplit) {
+    if (!skipOut && currentTitleSplit) {
       tl.to(currentTitleSplit.chars, {
         yPercent: -120,
         opacity: 0,
@@ -1033,7 +1033,7 @@ function initStickyTitleMeta() {
       }, 0);
     }
 
-    if (currentMetaSplit) {
+    if (!skipOut && currentMetaSplit) {
       tl.to(currentMetaSplit.chars, {
         yPercent: -80,
         opacity: 0,
@@ -1073,7 +1073,7 @@ function initStickyTitleMeta() {
       stagger: 0.02,
       duration: 0.35,
       ease: "power3.out"
-    }, "+=0.05");
+    }, skipOut ? 0 : "+=0.05");
 
     tl.to(currentTitleSplit.chars, {
       yPercent: 0,
@@ -1081,7 +1081,23 @@ function initStickyTitleMeta() {
       stagger: 0.04,
       duration: 0.6,
       ease: "power4.out"
-    }, "-=0.15");
+    }, skipOut ? 0 : "-=0.15");
+  }
+
+  // Initial state - set first chapter's content and hide it
+  const firstChapter = document.querySelector('[data-sticky-title]');
+  if (firstChapter) {
+    stickyTitleEl.textContent = firstChapter.dataset.stickyTitle;
+    stickyMetaEl.textContent = firstChapter.dataset.stickyMeta || "";
+
+    currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+    currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+
+    // Set initial hidden state to prevent flash
+    gsap.set([...currentTitleSplit.chars, ...currentMetaSplit.chars], {
+      yPercent: 120,
+      opacity: 0
+    });
   }
 
   // ScrollTrigger setup - data-driven, clean
@@ -1107,14 +1123,29 @@ function initStickyTitleMeta() {
     });
   });
 
-  // Initial state - set first chapter's content without animation
-  const firstChapter = document.querySelector('[data-sticky-title]');
+  // Animate first chapter in on initial load
   if (firstChapter) {
-    stickyTitleEl.textContent = firstChapter.dataset.stickyTitle;
-    stickyMetaEl.textContent = firstChapter.dataset.stickyMeta || "";
+    // Wait for everything to be ready, then animate first chapter in
+    const animateFirstChapter = () => {
+      ScrollTrigger.refresh();
+      
+      // Small delay to ensure everything is initialized
+      gsap.delayedCall(0.2, () => {
+        // Always animate first chapter in on initial load (skip OUT since it's initial)
+        updateStickyText({
+          title: firstChapter.dataset.stickyTitle,
+          meta: firstChapter.dataset.stickyMeta || "",
+          skipOut: true
+        });
+      });
+    };
 
-    currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
-    currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+    // Check after DOM is ready and ScrollTrigger is initialized
+    if (document.readyState === 'complete') {
+      animateFirstChapter();
+    } else {
+      window.addEventListener('load', animateFirstChapter, { once: true });
+    }
   }
 }
 
