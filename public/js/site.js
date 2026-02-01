@@ -1009,21 +1009,27 @@ function initStickyTitleMeta() {
   const stickyMetaEl = document.querySelector('[data-sticky-target="meta"]');
 
   // If sticky elements don't exist, exit early
-  if (!stickyTitleEl || !stickyMetaEl) return;
+  if (!stickyTitleEl || !stickyMetaEl) {
+    console.warn('Sticky title/meta elements not found');
+    return;
+  }
 
   let currentTitleSplit = null;
   let currentMetaSplit = null;
-
-  let currentTitleText = "";
-  let currentMetaText = "";
+  let isInitialized = false;
 
   // Core update function: OUT → swap → IN
   function updateStickyText({ title, meta, skipOut = false }) {
+    if (!title && !meta) {
+      console.warn('updateStickyText called with no title or meta');
+      return;
+    }
+
     const tl = gsap.timeline({ defaults: { overwrite: true } });
 
     /* ---------- OUT ---------- */
 
-    if (!skipOut && currentTitleSplit) {
+    if (!skipOut && currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
       tl.to(currentTitleSplit.chars, {
         yPercent: -120,
         opacity: 0,
@@ -1033,7 +1039,7 @@ function initStickyTitleMeta() {
       }, 0);
     }
 
-    if (!skipOut && currentMetaSplit) {
+    if (!skipOut && currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
       tl.to(currentMetaSplit.chars, {
         yPercent: -80,
         opacity: 0,
@@ -1045,63 +1051,136 @@ function initStickyTitleMeta() {
 
     /* ---------- SWAP ---------- */
 
+    // Position swap based on whether we're skipping OUT animation
+    const swapPosition = skipOut ? 0 : undefined;
+    
     tl.add(() => {
       // Clean up old splits
-      if (currentTitleSplit) currentTitleSplit.revert();
-      if (currentMetaSplit) currentMetaSplit.revert();
+      if (currentTitleSplit) {
+        try {
+          currentTitleSplit.revert();
+        } catch (e) {
+          // Ignore revert errors
+        }
+      }
+      if (currentMetaSplit) {
+        try {
+          currentMetaSplit.revert();
+        } catch (e) {
+          // Ignore revert errors
+        }
+      }
 
       // Set new text
-      stickyTitleEl.textContent = title;
-      stickyMetaEl.textContent = meta;
+      if (title !== undefined) stickyTitleEl.textContent = title || "";
+      if (meta !== undefined) stickyMetaEl.textContent = meta || "";
 
-      // Split again
-      currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
-      currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+      // Split again (only if there's actual text)
+      try {
+        if (title && title.trim().length > 0) {
+          currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+        } else {
+          currentTitleSplit = null;
+        }
+        if (meta && meta.trim().length > 0) {
+          currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+        } else {
+          currentMetaSplit = null;
+        }
 
-      // Prep IN state
-      gsap.set([...currentTitleSplit.chars, ...currentMetaSplit.chars], {
-        yPercent: 120,
-        opacity: 0
-      });
-    });
+        // Prep IN state
+        const charsToHide = [];
+        if (currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
+          charsToHide.push(...currentTitleSplit.chars);
+        }
+        if (currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
+          charsToHide.push(...currentMetaSplit.chars);
+        }
+
+        if (charsToHide.length > 0) {
+          gsap.set(charsToHide, {
+            yPercent: 120,
+            opacity: 0
+          });
+        }
+      } catch (e) {
+        console.warn('Error creating splits:', e);
+      }
+    }, swapPosition);
 
     /* ---------- IN ---------- */
 
-    tl.to(currentMetaSplit.chars, {
-      yPercent: 0,
-      opacity: 1,
-      stagger: 0.02,
-      duration: 0.35,
-      ease: "power3.out"
-    }, skipOut ? 0 : "+=0.05");
+    if (currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
+      tl.to(currentMetaSplit.chars, {
+        yPercent: 0,
+        opacity: 1,
+        stagger: 0.02,
+        duration: 0.35,
+        ease: "power3.out"
+      }, skipOut ? "+=0.1" : "+=0.05");
+    }
 
-    tl.to(currentTitleSplit.chars, {
-      yPercent: 0,
-      opacity: 1,
-      stagger: 0.04,
-      duration: 0.6,
-      ease: "power4.out"
-    }, skipOut ? 0 : "-=0.15");
+    if (currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
+      tl.to(currentTitleSplit.chars, {
+        yPercent: 0,
+        opacity: 1,
+        stagger: 0.04,
+        duration: 0.6,
+        ease: "power4.out"
+      }, skipOut ? "+=0.1" : "-=0.15");
+    }
   }
 
+  // Get all chapters
+  const chapters = gsap.utils.toArray('[data-sticky-title]');
+  
+  if (chapters.length === 0) {
+    console.warn('No chapters with data-sticky-title found');
+    return;
+  }
+
+  const firstChapter = chapters[0];
+
   // Initial state - set first chapter's content and hide it
-  const firstChapter = document.querySelector('[data-sticky-title]');
   if (firstChapter) {
-    stickyTitleEl.textContent = firstChapter.dataset.stickyTitle;
-    stickyMetaEl.textContent = firstChapter.dataset.stickyMeta || "";
+    const initialTitle = firstChapter.dataset.stickyTitle || "";
+    const initialMeta = firstChapter.dataset.stickyMeta || "";
 
-    currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
-    currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+    // Set text content (even if empty, to ensure elements are ready)
+    stickyTitleEl.textContent = initialTitle;
+    stickyMetaEl.textContent = initialMeta;
 
-    // Set initial hidden state to prevent flash
-    gsap.set([...currentTitleSplit.chars, ...currentMetaSplit.chars], {
-      yPercent: 120,
-      opacity: 0
-    });
+    try {
+      // Only create splits if there's actual text content
+      if (initialTitle && initialTitle.trim().length > 0) {
+        currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+      }
+      if (initialMeta && initialMeta.trim().length > 0) {
+        currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+      }
+
+      // Set initial hidden state to prevent flash
+      const charsToHide = [];
+      if (currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
+        charsToHide.push(...currentTitleSplit.chars);
+      }
+      if (currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
+        charsToHide.push(...currentMetaSplit.chars);
+      }
+
+      if (charsToHide.length > 0) {
+        gsap.set(charsToHide, {
+          yPercent: 120,
+          opacity: 0
+        });
+      }
+    } catch (e) {
+      console.warn('Error setting initial state:', e);
+    }
   }
 
   // ScrollTrigger setup - data-driven, clean
-  gsap.utils.toArray('[data-sticky-title]').forEach(chapter => {
+  chapters.forEach(chapter => {
     ScrollTrigger.create({
       trigger: chapter,
       start: "top center",
@@ -1109,46 +1188,72 @@ function initStickyTitleMeta() {
 
       onEnter: () => {
         updateStickyText({
-          title: chapter.dataset.stickyTitle,
+          title: chapter.dataset.stickyTitle || "",
           meta: chapter.dataset.stickyMeta || ""
         });
       },
 
       onEnterBack: () => {
         updateStickyText({
-          title: chapter.dataset.stickyTitle,
+          title: chapter.dataset.stickyTitle || "",
           meta: chapter.dataset.stickyMeta || ""
         });
       }
     });
   });
 
-  // Animate first chapter in on initial load
-  if (firstChapter) {
-    // Wait for everything to be ready, then animate first chapter in
-    const animateFirstChapter = () => {
-      ScrollTrigger.refresh();
-      
-      // Small delay to ensure everything is initialized
-      gsap.delayedCall(0.2, () => {
-        // Always animate first chapter in on initial load (skip OUT since it's initial)
+  // Animate first chapter in after everything is set up
+  const animateFirstChapter = () => {
+    // Refresh ScrollTrigger to ensure positions are calculated
+    ScrollTrigger.refresh();
+    
+    // Animate first chapter in on initial load
+    const checkAndAnimate = () => {
+      if (firstChapter && stickyTitleEl && stickyMetaEl) {
+        // Always animate first chapter in on initial load
         updateStickyText({
-          title: firstChapter.dataset.stickyTitle,
+          title: firstChapter.dataset.stickyTitle || "",
           meta: firstChapter.dataset.stickyMeta || "",
           skipOut: true
         });
-      });
+
+        isInitialized = true;
+      }
     };
 
-    // Check after DOM is ready and ScrollTrigger is initialized
-    if (document.readyState === 'complete') {
-      animateFirstChapter();
-    } else {
-      window.addEventListener('load', animateFirstChapter, { once: true });
-    }
+    // Small delay to ensure everything is ready
+    gsap.delayedCall(0.3, checkAndAnimate);
+  };
+
+  // Wait for everything to be ready
+  if (document.readyState === 'complete') {
+    animateFirstChapter();
+  } else {
+    window.addEventListener('load', animateFirstChapter, { once: true });
   }
 }
 
-// Initialize Sticky Title & Meta
-document.addEventListener('DOMContentLoaded', initStickyTitleMeta);
+// Initialize Sticky Title & Meta - use Webflow ready pattern
+let stickyTitleMetaInitialized = false;
+
+function initStickyTitleMetaOnce() {
+  if (stickyTitleMetaInitialized) return;
+  stickyTitleMetaInitialized = true;
+  initStickyTitleMeta();
+}
+
+// Use Webflow ready pattern (primary)
+window.Webflow.push(() => {
+  initStickyTitleMetaOnce();
+});
+
+// Fallback for DOMContentLoaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initStickyTitleMetaOnce, 200);
+  });
+} else {
+  // DOM already loaded
+  setTimeout(initStickyTitleMetaOnce, 200);
+}
 
