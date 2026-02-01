@@ -1016,7 +1016,6 @@ function initStickyTitleMeta() {
 
   let currentTitleSplit = null;
   let currentMetaSplit = null;
-  let isInitialized = false;
 
   // Core update function: OUT → swap → IN
   function updateStickyText({ title, meta, skipOut = false }) {
@@ -1032,7 +1031,6 @@ function initStickyTitleMeta() {
     if (!skipOut && currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
       tl.to(currentTitleSplit.chars, {
         yPercent: -120,
-        opacity: 0,
         stagger: 0.025,
         duration: 0.35,
         ease: "power2.in"
@@ -1042,7 +1040,6 @@ function initStickyTitleMeta() {
     if (!skipOut && currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
       tl.to(currentMetaSplit.chars, {
         yPercent: -80,
-        opacity: 0,
         stagger: 0.02,
         duration: 0.25,
         ease: "power2.in"
@@ -1051,9 +1048,6 @@ function initStickyTitleMeta() {
 
     /* ---------- SWAP ---------- */
 
-    // Position swap based on whether we're skipping OUT animation
-    const swapPosition = skipOut ? 0 : undefined;
-    
     tl.add(() => {
       // Clean up old splits
       if (currentTitleSplit) {
@@ -1088,32 +1082,30 @@ function initStickyTitleMeta() {
           currentMetaSplit = null;
         }
 
-        // Prep IN state
-        const charsToHide = [];
+        // Prep IN state - only yPercent, no opacity
+        const charsToAnimate = [];
         if (currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
-          charsToHide.push(...currentTitleSplit.chars);
+          charsToAnimate.push(...currentTitleSplit.chars);
         }
         if (currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
-          charsToHide.push(...currentMetaSplit.chars);
+          charsToAnimate.push(...currentMetaSplit.chars);
         }
 
-        if (charsToHide.length > 0) {
-          gsap.set(charsToHide, {
-            yPercent: 120,
-            opacity: 0
+        if (charsToAnimate.length > 0) {
+          gsap.set(charsToAnimate, {
+            yPercent: 120
           });
         }
       } catch (e) {
         console.warn('Error creating splits:', e);
       }
-    }, swapPosition);
+    });
 
     /* ---------- IN ---------- */
 
     if (currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
       tl.to(currentMetaSplit.chars, {
         yPercent: 0,
-        opacity: 1,
         stagger: 0.02,
         duration: 0.35,
         ease: "power3.out"
@@ -1123,7 +1115,6 @@ function initStickyTitleMeta() {
     if (currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
       tl.to(currentTitleSplit.chars, {
         yPercent: 0,
-        opacity: 1,
         stagger: 0.04,
         duration: 0.6,
         ease: "power4.out"
@@ -1141,38 +1132,22 @@ function initStickyTitleMeta() {
 
   const firstChapter = chapters[0];
 
-  // Initial state - set first chapter's content and hide it
+  // Initial state - set first chapter's content (visible, no hiding)
   if (firstChapter) {
     const initialTitle = firstChapter.dataset.stickyTitle || "";
     const initialMeta = firstChapter.dataset.stickyMeta || "";
 
-    // Set text content (even if empty, to ensure elements are ready)
+    // Set text content - visible from start (Webflow handles FOUC)
     stickyTitleEl.textContent = initialTitle;
     stickyMetaEl.textContent = initialMeta;
 
+    // Create initial splits but don't hide them
     try {
-      // Only create splits if there's actual text content
       if (initialTitle && initialTitle.trim().length > 0) {
         currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
       }
       if (initialMeta && initialMeta.trim().length > 0) {
         currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
-      }
-
-      // Set initial hidden state to prevent flash
-      const charsToHide = [];
-      if (currentTitleSplit && currentTitleSplit.chars && currentTitleSplit.chars.length > 0) {
-        charsToHide.push(...currentTitleSplit.chars);
-      }
-      if (currentMetaSplit && currentMetaSplit.chars && currentMetaSplit.chars.length > 0) {
-        charsToHide.push(...currentMetaSplit.chars);
-      }
-
-      if (charsToHide.length > 0) {
-        gsap.set(charsToHide, {
-          yPercent: 120,
-          opacity: 0
-        });
       }
     } catch (e) {
       console.warn('Error setting initial state:', e);
@@ -1180,6 +1155,7 @@ function initStickyTitleMeta() {
   }
 
   // ScrollTrigger setup - data-driven, clean
+  // Animation starts when chapter reaches center viewport
   chapters.forEach(chapter => {
     ScrollTrigger.create({
       trigger: chapter,
@@ -1189,7 +1165,8 @@ function initStickyTitleMeta() {
       onEnter: () => {
         updateStickyText({
           title: chapter.dataset.stickyTitle || "",
-          meta: chapter.dataset.stickyMeta || ""
+          meta: chapter.dataset.stickyMeta || "",
+          skipOut: chapter === firstChapter
         });
       },
 
@@ -1201,36 +1178,6 @@ function initStickyTitleMeta() {
       }
     });
   });
-
-  // Animate first chapter in after everything is set up
-  const animateFirstChapter = () => {
-    // Refresh ScrollTrigger to ensure positions are calculated
-    ScrollTrigger.refresh();
-    
-    // Animate first chapter in on initial load
-    const checkAndAnimate = () => {
-      if (firstChapter && stickyTitleEl && stickyMetaEl) {
-        // Always animate first chapter in on initial load
-        updateStickyText({
-          title: firstChapter.dataset.stickyTitle || "",
-          meta: firstChapter.dataset.stickyMeta || "",
-          skipOut: true
-        });
-
-        isInitialized = true;
-      }
-    };
-
-    // Small delay to ensure everything is ready
-    gsap.delayedCall(0.3, checkAndAnimate);
-  };
-
-  // Wait for everything to be ready
-  if (document.readyState === 'complete') {
-    animateFirstChapter();
-  } else {
-    window.addEventListener('load', animateFirstChapter, { once: true });
-  }
 }
 
 // Initialize Sticky Title & Meta - use Webflow ready pattern
