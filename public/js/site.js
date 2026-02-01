@@ -1014,15 +1014,89 @@ function initStickyTitleMeta() {
     return;
   }
 
-  // Simple update function - just update text content (no animations)
+  let currentTitleSplit = null;
+  let currentMetaSplit = null;
+
+  // Animated update function: OUT → swap → IN
   function updateStickyText({ title, meta }) {
-    console.log('Updating text:', { title, meta });
-    
-    if (title !== undefined) {
-      stickyTitleEl.textContent = title || "";
+    const tl = gsap.timeline({ defaults: { overwrite: true } });
+
+    /* ---------- OUT: Animate current text out ---------- */
+    if (currentTitleSplit && currentTitleSplit.chars) {
+      tl.to(currentTitleSplit.chars, {
+        yPercent: -120,
+        stagger: 0.025,
+        duration: 0.35,
+        ease: "power2.in"
+      }, 0);
     }
-    if (meta !== undefined) {
-      stickyMetaEl.textContent = meta || "";
+
+    if (currentMetaSplit && currentMetaSplit.chars) {
+      tl.to(currentMetaSplit.chars, {
+        yPercent: -80,
+        stagger: 0.02,
+        duration: 0.25,
+        ease: "power2.in"
+      }, 0);
+    }
+
+    /* ---------- SWAP: Update text and create new splits ---------- */
+    tl.add(() => {
+      // Revert old splits
+      if (currentTitleSplit) {
+        try {
+          currentTitleSplit.revert();
+        } catch (e) {}
+      }
+      if (currentMetaSplit) {
+        try {
+          currentMetaSplit.revert();
+        } catch (e) {}
+      }
+
+      // Update text content
+      if (title !== undefined) stickyTitleEl.textContent = title || "";
+      if (meta !== undefined) stickyMetaEl.textContent = meta || "";
+
+      // Create new splits
+      if (title && title.trim()) {
+        currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+      } else {
+        currentTitleSplit = null;
+      }
+
+      if (meta && meta.trim()) {
+        currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+      } else {
+        currentMetaSplit = null;
+      }
+
+      // Set initial position for new characters (below, ready to animate in)
+      if (currentTitleSplit && currentTitleSplit.chars) {
+        gsap.set(currentTitleSplit.chars, { yPercent: 120 });
+      }
+      if (currentMetaSplit && currentMetaSplit.chars) {
+        gsap.set(currentMetaSplit.chars, { yPercent: 120 });
+      }
+    });
+
+    /* ---------- IN: Animate new text in ---------- */
+    if (currentMetaSplit && currentMetaSplit.chars) {
+      tl.to(currentMetaSplit.chars, {
+        yPercent: 0,
+        stagger: 0.02,
+        duration: 0.35,
+        ease: "power3.out"
+      }, "+=0.05");
+    }
+
+    if (currentTitleSplit && currentTitleSplit.chars) {
+      tl.to(currentTitleSplit.chars, {
+        yPercent: 0,
+        stagger: 0.04,
+        duration: 0.6,
+        ease: "power4.out"
+      }, "-=0.15");
     }
   }
 
@@ -1034,28 +1108,37 @@ function initStickyTitleMeta() {
     return;
   }
 
-  console.log('Found chapters:', chapters.length);
-
-  // Set initial text from first chapter
+  // Set initial text from first chapter and create initial splits
   const firstChapter = chapters[0];
   if (firstChapter) {
     stickyTitleEl.textContent = firstChapter.dataset.stickyTitle || "";
     stickyMetaEl.textContent = firstChapter.dataset.stickyMeta || "";
-    console.log('Initial text set:', {
-      title: firstChapter.dataset.stickyTitle,
-      meta: firstChapter.dataset.stickyMeta
-    });
+
+    // Create initial splits (visible, no animation needed)
+    if (stickyTitleEl.textContent.trim()) {
+      currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+      // Ensure initial text is visible
+      if (currentTitleSplit.chars) {
+        gsap.set(currentTitleSplit.chars, { yPercent: 0, clearProps: "all" });
+      }
+    }
+    if (stickyMetaEl.textContent.trim()) {
+      currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+      // Ensure initial text is visible
+      if (currentMetaSplit.chars) {
+        gsap.set(currentMetaSplit.chars, { yPercent: 0, clearProps: "all" });
+      }
+    }
   }
 
   // ScrollTrigger setup - trigger when top of chapter enters viewport
-  chapters.forEach((chapter, index) => {
+  chapters.forEach(chapter => {
     ScrollTrigger.create({
       trigger: chapter,
       start: "top bottom",
       end: "bottom top",
 
       onEnter: () => {
-        console.log(`Chapter ${index} entered - updating text`);
         updateStickyText({
           title: chapter.dataset.stickyTitle || "",
           meta: chapter.dataset.stickyMeta || ""
@@ -1063,7 +1146,6 @@ function initStickyTitleMeta() {
       },
 
       onEnterBack: () => {
-        console.log(`Chapter ${index} entered back - updating text`);
         updateStickyText({
           title: chapter.dataset.stickyTitle || "",
           meta: chapter.dataset.stickyMeta || ""
