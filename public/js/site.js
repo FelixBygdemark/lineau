@@ -998,184 +998,91 @@ document.addEventListener('DOMContentLoaded', initNavCharStagger);
 
 
 
+// OSMO Marquee Scroll Direction
 
+function initMarqueeScrollDirection() {
+  document.querySelectorAll('[data-marquee-scroll-direction-target]').forEach((marquee) => {
+    // Query marquee elements
+    const marqueeContent = marquee.querySelector('[data-marquee-collection-target]');
+    const marqueeScroll = marquee.querySelector('[data-marquee-scroll-target]');
+    if (!marqueeContent || !marqueeScroll) return;
 
-// ––––––––– Sticky Title & Meta Animation (Data-Driven)
-// Uses data-sticky-title and data-sticky-meta on chapters
-// Updates [data-sticky-target="title"] and [data-sticky-target="meta"] elements
+    // Get data attributes
+    const { marqueeSpeed: speed, marqueeDirection: direction, marqueeDuplicate: duplicate, marqueeScrollSpeed: scrollSpeed } = marquee.dataset;
 
-function initStickyTitleMeta() {
-  const stickyTitleEl = document.querySelector('[data-sticky-target="title"]');
-  const stickyMetaEl = document.querySelector('[data-sticky-target="meta"]');
+    // Convert data attributes to usable types
+    const marqueeSpeedAttr = parseFloat(speed);
+    const marqueeDirectionAttr = direction === 'right' ? 1 : -1; // 1 for right, -1 for left
+    const duplicateAmount = parseInt(duplicate || 0);
+    const scrollSpeedAttr = parseFloat(scrollSpeed);
+    const speedMultiplier = window.innerWidth < 479 ? 0.25 : window.innerWidth < 991 ? 0.5 : 1;
 
-  // If sticky elements don't exist, exit early
-  if (!stickyTitleEl || !stickyMetaEl) {
-    console.warn('Sticky title/meta elements not found');
-    return;
-  }
+    let marqueeSpeed = marqueeSpeedAttr * (marqueeContent.offsetWidth / window.innerWidth) * speedMultiplier;
 
-  let currentTitleSplit = null;
-  let currentMetaSplit = null;
+    // Precompute styles for the scroll container
+    marqueeScroll.style.marginLeft = `${scrollSpeedAttr * -1}%`;
+    marqueeScroll.style.width = `${(scrollSpeedAttr * 2) + 100}%`;
 
-  // Animated update function: OUT → swap → IN
-  function updateStickyText({ title, meta }) {
-    const tl = gsap.timeline({ defaults: { overwrite: true } });
-
-    /* ---------- OUT: Animate current text out ---------- */
-    if (currentTitleSplit && currentTitleSplit.chars) {
-      tl.to(currentTitleSplit.chars, {
-        yPercent: -120,
-        stagger: 0.025,
-        duration: 0.35,
-        ease: "power2.in"
-      }, 0);
-    }
-
-    if (currentMetaSplit && currentMetaSplit.chars) {
-      tl.to(currentMetaSplit.chars, {
-        yPercent: -80,
-        stagger: 0.02,
-        duration: 0.25,
-        ease: "power2.in"
-      }, 0);
-    }
-
-   /* ---------- SWAP: Update text and create new splits ---------- */
-   tl.add(() => {
-    // Revert old splits
-    if (currentTitleSplit) {
-      try {
-        currentTitleSplit.revert();
-      } catch (e) {}
-    }
-    if (currentMetaSplit) {
-      try {
-        currentMetaSplit.revert();
-      } catch (e) {}
-    }
-
-    // Update text content
-    if (title !== undefined) stickyTitleEl.textContent = title || "";
-    if (meta !== undefined) stickyMetaEl.textContent = meta || "";
-
-    // Create new splits
-    if (title && title.trim()) {
-      currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
-    } else {
-      currentTitleSplit = null;
-    }
-
-    if (meta && meta.trim()) {
-      currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
-    } else {
-      currentMetaSplit = null;
-    }
-
-    // Set initial position for new characters (below, ready to animate in)
-    if (currentTitleSplit && currentTitleSplit.chars) {
-      gsap.set(currentTitleSplit.chars, { yPercent: 120 });
-    }
-    if (currentMetaSplit && currentMetaSplit.chars) {
-      gsap.set(currentMetaSplit.chars, { yPercent: 120 });
-    }
-
-    /* ---------- IN: Animate new text in ---------- */
-    if (currentTitleSplit && currentTitleSplit.chars) {
-      tl.to(currentTitleSplit.chars, {
-        yPercent: 0,
-        stagger: 0.01,
-        duration: 0.2,
-        ease: "power4.out"
-      }, "+=0");
-    }
-
-    if (currentMetaSplit && currentMetaSplit.chars) {
-      tl.to(currentMetaSplit.chars, {
-        yPercent: 0,
-        stagger: 0.01,
-        duration: 0.2,
-        ease: "power4.out"
-      }, "+=0.05");
-    }
-  });
-  }
-
-  // Get all chapters
-  const chapters = gsap.utils.toArray('[data-sticky-title]');
-  
-  if (chapters.length === 0) {
-    console.warn('No chapters with data-sticky-title found');
-    return;
-  }
-
-  // Set initial text from first chapter and create initial splits
-  const firstChapter = chapters[0];
-  if (firstChapter) {
-    stickyTitleEl.textContent = firstChapter.dataset.stickyTitle || "";
-    stickyMetaEl.textContent = firstChapter.dataset.stickyMeta || "";
-
-    // Create initial splits (visible, no animation needed)
-    if (stickyTitleEl.textContent.trim()) {
-      currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
-      // Ensure initial text is visible
-      if (currentTitleSplit.chars) {
-        gsap.set(currentTitleSplit.chars, { yPercent: 0, clearProps: "all" });
+    // Duplicate marquee content
+    if (duplicateAmount > 0) {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < duplicateAmount; i++) {
+        fragment.appendChild(marqueeContent.cloneNode(true));
       }
+      marqueeScroll.appendChild(fragment);
     }
-    if (stickyMetaEl.textContent.trim()) {
-      currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
-      // Ensure initial text is visible
-      if (currentMetaSplit.chars) {
-        gsap.set(currentMetaSplit.chars, { yPercent: 0, clearProps: "all" });
-      }
-    }
-  }
 
-  // ScrollTrigger setup - trigger when top of chapter enters viewport
-  chapters.forEach(chapter => {
+    // GSAP animation for marquee content
+    const marqueeItems = marquee.querySelectorAll('[data-marquee-collection-target]');
+    const animation = gsap.to(marqueeItems, {
+      xPercent: -100, // Move completely out of view
+      repeat: -1,
+      duration: marqueeSpeed,
+      ease: 'linear'
+    }).totalProgress(0.5);
+
+    // Initialize marquee in the correct direction
+    gsap.set(marqueeItems, { xPercent: marqueeDirectionAttr === 1 ? 100 : -100 });
+    animation.timeScale(marqueeDirectionAttr); // Set correct direction
+    animation.play(); // Start animation immediately
+
+    // Set initial marquee status
+    marquee.setAttribute('data-marquee-status', 'normal');
+
+    // ScrollTrigger logic for direction inversion
     ScrollTrigger.create({
-      trigger: chapter,
-      start: "top bottom",
-      end: "bottom top",
+      trigger: marquee,
+      start: 'top bottom',
+      end: 'bottom top',
+      onUpdate: (self) => {
+        const isInverted = self.direction === 1; // Scrolling down
+        const currentDirection = isInverted ? -marqueeDirectionAttr : marqueeDirectionAttr;
 
-      onEnter: () => {
-        updateStickyText({
-          title: chapter.dataset.stickyTitle || "",
-          meta: chapter.dataset.stickyMeta || ""
-        });
-      },
-
-      onEnterBack: () => {
-        updateStickyText({
-          title: chapter.dataset.stickyTitle || "",
-          meta: chapter.dataset.stickyMeta || ""
-        });
+        // Update animation direction and marquee status
+        animation.timeScale(currentDirection);
+        marquee.setAttribute('data-marquee-status', isInverted ? 'normal' : 'inverted');
       }
     });
+
+    // Extra speed effect on scroll
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: marquee,
+        start: '0% 100%',
+        end: '100% 0%',
+        scrub: 0
+      }
+    });
+
+    const scrollStart = marqueeDirectionAttr === -1 ? scrollSpeedAttr : -scrollSpeedAttr;
+    const scrollEnd = -scrollStart;
+
+    tl.fromTo(marqueeScroll, { x: `${scrollStart}vw` }, { x: `${scrollEnd}vw`, ease: 'none' });
   });
 }
 
-// Initialize Sticky Title & Meta - use Webflow ready pattern
-let stickyTitleMetaInitialized = false;
-
-function initStickyTitleMetaOnce() {
-  if (stickyTitleMetaInitialized) return;
-  stickyTitleMetaInitialized = true;
-  initStickyTitleMeta();
-}
-
-// Use Webflow ready pattern (primary)
-window.Webflow.push(() => {
-  initStickyTitleMetaOnce();
+// Initialize Marquee with Scroll Direction
+document.addEventListener('DOMContentLoaded', () => {
+  initMarqueeScrollDirection();
 });
-
-// Fallback for DOMContentLoaded
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(initStickyTitleMetaOnce, 200);
-  });
-} else {
-  // DOM already loaded
-  setTimeout(initStickyTitleMetaOnce, 200);
-}
 
