@@ -1040,45 +1040,44 @@ function initStickyTitleMeta() {
       }, 0);
     }
 
-    /* ---------- SWAP: Update text and create new splits ---------- */
-    tl.add(() => {
-      // Revert old splits
-      if (currentTitleSplit) {
-        try {
-          currentTitleSplit.revert();
-        } catch (e) {}
-      }
-      if (currentMetaSplit) {
-        try {
-          currentMetaSplit.revert();
-        } catch (e) {}
-      }
+   /* ---------- SWAP: Update text and create new splits ---------- */
+   tl.add(() => {
+    // Revert old splits
+    if (currentTitleSplit) {
+      try {
+        currentTitleSplit.revert();
+      } catch (e) {}
+    }
+    if (currentMetaSplit) {
+      try {
+        currentMetaSplit.revert();
+      } catch (e) {}
+    }
 
-      // Update text content
-      if (title !== undefined) stickyTitleEl.textContent = title || "";
-      if (meta !== undefined) stickyMetaEl.textContent = meta || "";
+    // Update text content
+    if (title !== undefined) stickyTitleEl.textContent = title || "";
+    if (meta !== undefined) stickyMetaEl.textContent = meta || "";
 
-      // Create new splits
-      if (title && title.trim()) {
-        currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
-      } else {
-        currentTitleSplit = null;
-      }
+    // Create new splits
+    if (title && title.trim()) {
+      currentTitleSplit = new SplitText(stickyTitleEl, { type: "chars" });
+    } else {
+      currentTitleSplit = null;
+    }
 
-      if (meta && meta.trim()) {
-        currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
-      } else {
-        currentMetaSplit = null;
-      }
+    if (meta && meta.trim()) {
+      currentMetaSplit = new SplitText(stickyMetaEl, { type: "chars" });
+    } else {
+      currentMetaSplit = null;
+    }
 
-      // Set initial position for new characters (below, ready to animate in)
-      if (currentTitleSplit && currentTitleSplit.chars) {
-        gsap.set(currentTitleSplit.chars, { yPercent: 120 });
-      }
-      if (currentMetaSplit && currentMetaSplit.chars) {
-        gsap.set(currentMetaSplit.chars, { yPercent: 120 });
-      }
-    });
+    // Set initial position for new characters (below, ready to animate in)
+    if (currentTitleSplit && currentTitleSplit.chars) {
+      gsap.set(currentTitleSplit.chars, { yPercent: 120 });
+    }
+    if (currentMetaSplit && currentMetaSplit.chars) {
+      gsap.set(currentMetaSplit.chars, { yPercent: 120 });
+    }
 
     /* ---------- IN: Animate new text in ---------- */
     if (currentMetaSplit && currentMetaSplit.chars) {
@@ -1098,6 +1097,7 @@ function initStickyTitleMeta() {
         ease: "power4.out"
       }, "-=0.15");
     }
+  });
   }
 
   // Get all chapters
