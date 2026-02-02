@@ -1080,22 +1080,22 @@ function initStickyTitleMeta() {
     }
 
     /* ---------- IN: Animate new text in ---------- */
-    if (currentMetaSplit && currentMetaSplit.chars) {
-      tl.to(currentMetaSplit.chars, {
-        yPercent: 0,
-        stagger: 0.02,
-        duration: 0.35,
-        ease: "power3.out"
-      }, "+=0.05");
-    }
-
     if (currentTitleSplit && currentTitleSplit.chars) {
       tl.to(currentTitleSplit.chars, {
         yPercent: 0,
-        stagger: 0.04,
-        duration: 0.6,
+        stagger: 0.01,
+        duration: 0.2,
         ease: "power4.out"
-      }, "-=0.15");
+      }, "+=0");
+    }
+
+    if (currentMetaSplit && currentMetaSplit.chars) {
+      tl.to(currentMetaSplit.chars, {
+        yPercent: 0,
+        stagger: 0.01,
+        duration: 0.2,
+        ease: "power4.out"
+      }, "+=0.05");
     }
   });
   }
