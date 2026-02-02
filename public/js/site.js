@@ -1086,3 +1086,80 @@ document.addEventListener('DOMContentLoaded', () => {
   initMarqueeScrollDirection();
 });
 
+
+// Marquee text scroll-in animation
+document.querySelectorAll('[data-marquee-in]').forEach(marquee => {
+  const textEl = marquee.querySelector('[data-marquee-text]');
+  if (!textEl) return;
+
+  const split = new SplitText(textEl, { type: 'chars' });
+
+  gsap.set(split.chars, {
+    yPercent: -120,
+    opacity: 0
+  });
+
+  ScrollTrigger.create({
+    trigger: marquee,
+    start: 'top 80%',
+    end: 'bottom 20%',
+    onEnter: () => {
+      gsap.to(split.chars, {
+        yPercent: 0,
+        opacity: 1,
+        stagger: 0.015,
+        duration: 0.5,
+        ease: 'power3.out'
+      });
+    },
+    onLeave: () => {
+      gsap.to(split.chars, {
+        yPercent: 120,
+        opacity: 0,
+        stagger: 0.01,
+        duration: 0.35,
+        ease: 'power2.in'
+      });
+    },
+    onEnterBack: () => {
+      gsap.to(split.chars, {
+        yPercent: 0,
+        opacity: 1,
+        stagger: 0.015,
+        duration: 0.5,
+        ease: 'power3.out'
+      });
+    },
+    onLeaveBack: () => {
+      gsap.to(split.chars, {
+        yPercent: -120,
+        opacity: 0,
+        stagger: 0.01,
+        duration: 0.35,
+        ease: 'power2.in'
+      });
+    }
+  });
+});
+
+// Marquee parallax animation
+document.querySelectorAll('[data-marquee-parallax]').forEach(marquee => {
+  const amount = parseFloat(marquee.dataset.marqueeParallax) || 10;
+
+  gsap.fromTo(
+    marquee,
+    { yPercent: -amount },
+    {
+      yPercent: amount,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: marquee,
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: true
+      }
+    }
+  );
+});
+
+
