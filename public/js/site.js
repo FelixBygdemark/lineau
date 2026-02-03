@@ -1111,7 +1111,7 @@ function initBackgroundZoom() {
       defaults: { ease: "none" },
       scrollTrigger: {
         trigger: containers[0].querySelector("[data-bg-zoom-start]") || containers[0],
-        start: "clamp(top bottom)", // Change to "center center" to start from center of [data-bg-zoom-start]
+        start: "clamp(center center)", // Change to "center center" to start from center of [data-bg-zoom-start]
         endTrigger: containers[containers.length - 1],
         end: "bottom top",
         scrub: true,
@@ -1138,7 +1138,7 @@ function initBackgroundZoom() {
       // Part 1 - Move from Start to End position
       const zoomScrollRange = getScrollRange({
         trigger: startEl,
-        start: "clamp(top bottom)", // Change to "center center" to start from center of [data-bg-zoom-start]
+        start: "clamp(center center)", // Change to "center center" to start from center of [data-bg-zoom-start]
         endTrigger: endEl,
         end: "center center"
       });
