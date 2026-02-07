@@ -1108,8 +1108,9 @@ function initBackgroundZoom() {
     if (masterTimeline) masterTimeline.kill();
 
     const triggerEl = containers[0].querySelector("[data-bg-zoom-start]") || containers[0];
-    // Pin target: element with [data-bg-zoom-pin] (descendant or ancestor of timeline container)
-    const pinEl = containers[0].querySelector("[data-bg-zoom-pin]") || containers[0].closest("[data-bg-zoom-pin]");
+    // Pin target: [data-bg-zoom-pin] — sibling (e.g. in same home_hero_timeline), descendant, or ancestor
+    const parent = containers[0].parentElement;
+    const pinEl = parent?.querySelector("[data-bg-zoom-pin]") || containers[0].querySelector("[data-bg-zoom-pin]") || containers[0].closest("[data-bg-zoom-pin]");
 
     const scrollTriggerConfig = {
       trigger: triggerEl,
