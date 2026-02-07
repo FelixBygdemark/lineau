@@ -1107,16 +1107,23 @@ function initBackgroundZoom() {
   const bgZoomTimeline = () => {
     if (masterTimeline) masterTimeline.kill();
 
+    const triggerEl = containers[0].querySelector("[data-bg-zoom-start]") || containers[0];
+    // Pin target: element with [data-bg-zoom-pin] (descendant or ancestor of timeline container)
+    const pinEl = containers[0].querySelector("[data-bg-zoom-pin]") || containers[0].closest("[data-bg-zoom-pin]");
+
+    const scrollTriggerConfig = {
+      trigger: triggerEl,
+      start: "clamp(center center)",
+      endTrigger: containers[containers.length - 1],
+      end: "bottom top",
+      scrub: true,
+      invalidateOnRefresh: true
+    };
+    if (pinEl) scrollTriggerConfig.pin = pinEl;
+
     masterTimeline = gsap.timeline({
       defaults: { ease: "none" },
-      scrollTrigger: {
-        trigger: containers[0].querySelector("[data-bg-zoom-start]") || containers[0],
-        start: "clamp(center center)", // Change to "center center" to start from center of [data-bg-zoom-start]
-        endTrigger: containers[containers.length - 1],
-        end: "bottom top",
-        scrub: true,
-        invalidateOnRefresh: true
-      }
+      scrollTrigger: scrollTriggerConfig
     });
 
     containers.forEach((container) => {
