@@ -1091,6 +1091,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // OSMO Background Zoom
 
+gsap.registerPlugin(ScrollTrigger, Flip);
+
 function initBackgroundZoom() {
   const containers = document.querySelectorAll("[data-bg-zoom-init]");
   if (!containers.length) return;
@@ -1107,24 +1109,16 @@ function initBackgroundZoom() {
   const bgZoomTimeline = () => {
     if (masterTimeline) masterTimeline.kill();
 
-    const triggerEl = containers[0].querySelector("[data-bg-zoom-start]") || containers[0];
-    // Pin target: [data-bg-zoom-pin] — sibling (e.g. in same home_hero_timeline), descendant, or ancestor
-    const parent = containers[0].parentElement;
-    const pinEl = parent?.querySelector("[data-bg-zoom-pin]") || containers[0].querySelector("[data-bg-zoom-pin]") || containers[0].closest("[data-bg-zoom-pin]");
-
-    const scrollTriggerConfig = {
-      trigger: triggerEl,
-      start: "clamp(center center)",
-      endTrigger: containers[containers.length - 1],
-      end: "bottom top",
-      scrub: true,
-      invalidateOnRefresh: true
-    };
-    if (pinEl) scrollTriggerConfig.pin = pinEl;
-
     masterTimeline = gsap.timeline({
       defaults: { ease: "none" },
-      scrollTrigger: scrollTriggerConfig
+      scrollTrigger: {
+        trigger: containers[0].querySelector("[data-bg-zoom-start]") || containers[0],
+        start: "clamp(top bottom)", // Change to "center center" to start from center of [data-bg-zoom-start]
+        endTrigger: containers[containers.length - 1],
+        end: "bottom top",
+        scrub: true,
+        invalidateOnRefresh: true
+      }
     });
 
     containers.forEach((container) => {
@@ -1146,7 +1140,7 @@ function initBackgroundZoom() {
       // Part 1 - Move from Start to End position
       const zoomScrollRange = getScrollRange({
         trigger: startEl,
-        start: "clamp(center center)", // Change to "center center" to start from center of [data-bg-zoom-start]
+        start: "clamp(top bottom)", // Change to "center center" to start from center of [data-bg-zoom-start]
         endTrigger: endEl,
         end: "center center"
       });
