@@ -1113,7 +1113,7 @@ function initBackgroundZoom() {
       defaults: { ease: "none" },
       scrollTrigger: {
         trigger: containers[0].querySelector("[data-bg-zoom-start]") || containers[0],
-        start: "clamp(top bottom)", // Change to "center center" to start from center of [data-bg-zoom-start]
+        start: "clamp(top center)", // Change to "center center" to start from center of [data-bg-zoom-start]
         endTrigger: containers[containers.length - 1],
         end: "bottom top",
         scrub: true,
@@ -1140,7 +1140,7 @@ function initBackgroundZoom() {
       // Part 1 - Move from Start to End position
       const zoomScrollRange = getScrollRange({
         trigger: startEl,
-        start: "clamp(top bottom)", // Change to "center center" to start from center of [data-bg-zoom-start]
+        start: "clamp(top center)", // Change to "center center" to start from center of [data-bg-zoom-start]
         endTrigger: endEl,
         end: "center center"
       });
@@ -1180,7 +1180,7 @@ function initBackgroundZoom() {
       if (darkEl) {
         gsap.set(darkEl, { opacity: 0 });
         masterTimeline.to(darkEl, { 
-          opacity: 0.75, 
+          opacity: 1, 
           duration: afterScrollRange * 0.25,
         }, "<");
       }
@@ -1190,7 +1190,7 @@ function initBackgroundZoom() {
         gsap.set(imgEl, { scale: 1, transformOrigin: "50% 50%" });
         masterTimeline.to(imgEl, { 
           scale: 1.25, 
-          yPercent: -10,
+          yPercent: 0,
           duration: afterScrollRange 
         }, "<");
       }
