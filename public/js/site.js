@@ -1189,7 +1189,7 @@ function initBackgroundZoom() {
       if (imgEl) {
         gsap.set(imgEl, { scale: 1, transformOrigin: "50% 50%" });
         masterTimeline.to(imgEl, { 
-          scale: 1.25, 
+          scale: 1, 
           yPercent: 0,
           duration: afterScrollRange 
         }, "<");
