@@ -1,3 +1,15 @@
+// ––––––––– Home page: scroll to top on refresh, no scroll during load animation
+// Lock (.is--locked) is added/removed by Webflow + GSAP; we only set restoration + initial scroll
+const HOME_PAGE_ID = "680ff6fa57f13571278fb219";
+
+const isHome = document.documentElement.dataset.wfPage === HOME_PAGE_ID;
+if (isHome) {
+  if ("scrollRestoration" in history) {
+    history.scrollRestoration = "manual";
+  }
+  window.scrollTo(0, 0);
+}
+
 // Ensure Webflow & DOM are ready
 window.Webflow ||= [];
 window.Webflow.push(() => {
