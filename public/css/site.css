@@ -10,6 +10,46 @@
   -ms-overflow-style: none;  /* IE and Edge */
 }
 
+/* OSMO Crisp Loader Animation */
+/* Disable Scroll on Loading */
+main:has(.crisp-header.is--loading) {
+  height: 100dvh;
+}
+
+/* Loading: Hidden */
+.crisp-header.is--loading.is--hidden {
+  display: none;
+}
+
+/* Loading: is Loading */
+.crisp-header.is--loading .crisp-header__slider {
+  display: none;
+}
+
+.crisp-header.is--loading .crisp-loader {
+  display: flex;
+}
+
+/* Loading: Loading Done */
+.crisp-loader {
+  display: none;
+}
+
+/* Webflow Editor */
+:is(.wf-design-mode, .wf-editor) .crisp-header.is--loading.is--hidden,
+:is(.wf-design-mode, .wf-editor) .crisp-header.is--loading.is--hidden .crisp-header__slider{
+  display: flex;
+}
+
+:is(.wf-design-mode, .wf-editor) .crisp-header.is--loading.is--hidden .crisp-loader {
+  display: none;
+}
+
+
+
+
+
+
 /* Nav stagger */
 [data-nav-stagger] {
   line-height: 1;
