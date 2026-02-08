@@ -205,7 +205,7 @@ body:has([data-cursor]:hover) .cursor {
 }
 
 
-/* footer infinite marquee */
+/* footer gallery */
   
 .tiles {
 	position: absolute;
@@ -290,3 +290,18 @@ body:has([data-cursor]:hover) .cursor {
 .ratio-16-9 { aspect-ratio: 16 / 9; }
 .ratio-3-2 { aspect-ratio: 3 / 2; }
 .ratio-2-3 { aspect-ratio: 2 / 3; }
+
+
+/* OSMO Marquee */
+/* CSS Keyframe Animation */
+@keyframes translateX { 
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+[data-css-marquee-list] {
+  animation: translateX 30s linear;
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+}
