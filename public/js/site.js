@@ -1081,131 +1081,69 @@ window.Webflow = window.Webflow || [];
 window.Webflow.push(initCSSMarquee);
 
 
-
-
-// OSMO Background Zoom
-
 gsap.registerPlugin(ScrollTrigger, Flip);
 
-function initBackgroundZoom() {
-  const containers = document.querySelectorAll("[data-bg-zoom-init]");
-  if (!containers.length) return;
+function initFlipOnScroll() {
+  let wrapperElements = document.querySelectorAll("[data-flip-element='wrapper']");
+  let targetEl = document.querySelector("[data-flip-element='target']");
 
-  let masterTimeline;
-
-  const getScrollRange = ({ trigger, start, endTrigger, end }) => {
-    const st = ScrollTrigger.create({ trigger, start, endTrigger, end });
-    const range = Math.max(1, st.end - st.start);
-    st.kill();
-    return range;
-  };
-
-  const bgZoomTimeline = () => {
-    if (masterTimeline) masterTimeline.kill();
-
-    masterTimeline = gsap.timeline({
-      defaults: { ease: "none" },
+  let tl;
+  function flipTimeline() {
+    if (tl) {
+      tl.kill();
+      gsap.set(targetEl, { clearProps: "all" });
+    }
+    
+    // Use the first and last wrapper elements for the scroll trigger.
+    tl = gsap.timeline({
       scrollTrigger: {
-        trigger: containers[0].querySelector("[data-bg-zoom-start]") || containers[0],
-        start: "clamp(center center)", // Change to "center center" to start from center of [data-bg-zoom-start]
-        endTrigger: containers[containers.length - 1],
-        end: "bottom top",
-        scrub: true,
-        invalidateOnRefresh: true
-      }
-    });
-
-    containers.forEach((container) => {
-      const startEl = container.querySelector("[data-bg-zoom-start]");
-      const endEl = container.querySelector("[data-bg-zoom-end]");
-      const contentEl = container.querySelector("[data-bg-zoom-content]");
-      const darkEl = container.querySelector("[data-bg-zoom-dark]");
-      const imgEl = container.querySelector("[data-bg-zoom-img]");
-      if (!startEl || !endEl || !contentEl) return;
-
-      const startRadius = getComputedStyle(startEl).borderRadius;
-      const endRadius = getComputedStyle(endEl).borderRadius;
-      const hasRadius = startRadius !== "0px" || endRadius !== "0px";
-      contentEl.style.overflow = hasRadius ? "hidden" : "";
-      if (hasRadius) gsap.set(contentEl, { borderRadius: startRadius });
-
-      Flip.fit(contentEl, startEl, { scale: false });
-
-      // Part 1 - Move from Start to End position
-      const zoomScrollRange = getScrollRange({
-        trigger: startEl,
-        start: "clamp(center center)", // Change to "center center" to start from center of [data-bg-zoom-start]
-        endTrigger: endEl,
-        end: "center center"
-      });
-      
-      // Part 2 - End position to out of view
-      const afterScrollRange = getScrollRange({
-        trigger: endEl,
+        trigger: wrapperElements[0],
         start: "center center",
-        endTrigger: container,
-        end: "bottom top"
-      });
-      
-      // Master Timeline
-      masterTimeline.add(
-        Flip.fit(contentEl, endEl, {
-          duration: zoomScrollRange,
-          ease: "none",
-          scale: false,
-        })
-      );
-
-      // Border Radius  
-      if (hasRadius) {
-        masterTimeline.to(contentEl, { 
-            borderRadius: endRadius, 
-            duration: zoomScrollRange 
-        }, "<");
-      }
-      
-      // Content Y Position  
-      masterTimeline.to(contentEl, {
-        y: `+=${afterScrollRange}`,
-        duration: afterScrollRange
-      });
-      
-       // Dark Overlay
-      if (darkEl) {
-        gsap.set(darkEl, { opacity: 0 });
-        masterTimeline.to(darkEl, { 
-          opacity: 0, 
-          duration: afterScrollRange * 0.25,
-        }, "<");
-      }
-
-      // Image scale
-      if (imgEl) {
-        gsap.set(imgEl, { scale: 1, transformOrigin: "50% 50%" });
-        masterTimeline.to(imgEl, { 
-          scale: 1, 
-          yPercent: 0,
-          duration: afterScrollRange 
-        }, "<");
+        endTrigger: wrapperElements[wrapperElements.length - 1],
+        end: "center center",
+        scrub: 0.25
       }
     });
+    
+    // Loop through each wrapper element.
+    wrapperElements.forEach(function(element, index) {
+      let nextIndex = index + 1;
+      if (nextIndex < wrapperElements.length) {
+        let nextWrapperEl = wrapperElements[nextIndex];
+        // Calculate vertical center positions relative to the document.
+        let nextRect = nextWrapperEl.getBoundingClientRect();
+        let thisRect = element.getBoundingClientRect();
+        let nextDistance = nextRect.top + window.pageYOffset + nextWrapperEl.offsetHeight / 2;
+        let thisDistance = thisRect.top + window.pageYOffset + element.offsetHeight / 2;
+        let offset = nextDistance - thisDistance;
+        // Add the Flip.fit tween to the timeline.
+        tl.add(
+          Flip.fit(targetEl, nextWrapperEl, {
+            duration: offset,
+            ease: "none"
+          })
+        );
+      }
+    });
+  }
 
-    ScrollTrigger.refresh();
-  };
-
-  bgZoomTimeline();
+  flipTimeline();
 
   let resizeTimer;
-  window.addEventListener("resize", () => {
+  window.addEventListener("resize", function () {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(bgZoomTimeline, 100);
+    resizeTimer = setTimeout(function () {
+      flipTimeline();
+    }, 100);
   });
 }
 
-// Initialize Image to Background (Zoom)
+// Initialize Scaling Elements on Scroll (GSAP Flip)
 document.addEventListener('DOMContentLoaded', function() {
-  initBackgroundZoom();
+  initFlipOnScroll();
 });
+
+
 
 
 // Home_case_timeline title animation
