@@ -1002,39 +1002,71 @@ document.addEventListener('DOMContentLoaded', initNavCharStagger);
 
 function initCSSMarquee() {
   const pixelsPerSecond = 75; // Set the marquee speed (pixels per second)
+  const defaultDuration = 30; // fallback when width is 0 (e.g. before layout)
   const marquees = document.querySelectorAll('[data-css-marquee]');
-  
-  // Duplicate each [data-css-marquee-list] element inside its container
+
+  function setMarqueeDuration(list) {
+    const w = list.offsetWidth;
+    const duration = w > 0 ? w / pixelsPerSecond : defaultDuration;
+    list.style.animationDuration = duration + 's';
+    return w > 0;
+  }
+
+  // Duplicate each [data-css-marquee-list] only once (idempotent)
   marquees.forEach(marquee => {
+    if (marquee.hasAttribute('data-css-marquee-inited')) return;
+    marquee.setAttribute('data-css-marquee-inited', '');
     marquee.querySelectorAll('[data-css-marquee-list]').forEach(list => {
       const duplicate = list.cloneNode(true);
       marquee.appendChild(duplicate);
     });
   });
 
-  // Create an IntersectionObserver to check if the marquee container is in view
+  // Create an IntersectionObserver to pause when out of view and recalc duration when in view
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
-      entry.target.querySelectorAll('[data-css-marquee-list]').forEach(list => 
-        list.style.animationPlayState = entry.isIntersecting ? 'running' : 'paused'
-      );
+      const lists = entry.target.querySelectorAll('[data-css-marquee-list]');
+      lists.forEach(list => {
+        if (entry.isIntersecting) {
+          // Recalc duration when entering view (fixes 0 width when measured before layout)
+          setMarqueeDuration(list);
+          list.style.animationPlayState = 'running';
+        } else {
+          list.style.animationPlayState = 'paused';
+        }
+      });
     });
   }, { threshold: 0 });
-  
-  // Calculate the width and set the animation duration accordingly
-  marquees.forEach(marquee => {
-    marquee.querySelectorAll('[data-css-marquee-list]').forEach(list => {
-      list.style.animationDuration = (list.offsetWidth / pixelsPerSecond) + 's';
-      list.style.animationPlayState = 'paused';
+
+  // Measure after layout is ready (Webflow/GSAP may affect layout after DOMContentLoaded)
+  function measureAndObserve() {
+    marquees.forEach(marquee => {
+      marquee.querySelectorAll('[data-css-marquee-list]').forEach(list => {
+        setMarqueeDuration(list);
+        list.style.animationPlayState = 'paused';
+      });
+      observer.observe(marquee);
     });
-    observer.observe(marquee);
+  }
+
+  // Run after paint so offsetWidth is correct (handles parent overflow/layout)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(measureAndObserve);
   });
 }
 
-// Initialize CSS Marquee
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize CSS Marquee (after DOM and optionally after Webflow)
+function runCSSMarquee() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runCSSMarquee);
+    return;
+  }
   initCSSMarquee();
-});
+}
+runCSSMarquee();
+// Also run when Webflow is ready (in case marquee is injected or laid out later)
+window.Webflow = window.Webflow || [];
+window.Webflow.push(initCSSMarquee);
 
 
 

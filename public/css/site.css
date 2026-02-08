@@ -293,15 +293,20 @@ body:has([data-cursor]:hover) .cursor {
 
 
 /* OSMO Marquee */
-/* CSS Keyframe Animation */
-@keyframes translateX { 
+/* Container: clip content so only one viewport-width is visible; required for scroll effect */
+[data-css-marquee] {
+  overflow: hidden;
+}
+/* List must not wrap so its width is the full content width for animation duration */
+[data-css-marquee-list] {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  animation: translateX 30s linear infinite;
+  animation-play-state: paused;
+}
+@keyframes translateX {
   to {
     transform: translateX(-100%);
   }
-}
-
-[data-css-marquee-list] {
-  animation: translateX 30s linear;
-  animation-iteration-count: infinite;
-  animation-play-state: paused;
 }
