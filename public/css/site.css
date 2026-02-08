@@ -25,6 +25,27 @@
   will-change: transform;
 }
 
+/* OSMO Marquee */
+/* Container: clip content so only one viewport-width is visible; required for scroll effect */
+[data-css-marquee] {
+  overflow: hidden;
+}
+/* List must not wrap so its width is the full content width for animation duration */
+[data-css-marquee-list] {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  animation: translateX 30s linear infinite;
+  animation-play-state: playing;
+}
+@keyframes translateX {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+
+
 /* Custom Cursor */
 body:has([data-cursor]:hover) .cursor { 
   opacity: 1; 
@@ -292,21 +313,3 @@ body:has([data-cursor]:hover) .cursor {
 .ratio-2-3 { aspect-ratio: 2 / 3; }
 
 
-/* OSMO Marquee */
-/* Container: clip content so only one viewport-width is visible; required for scroll effect */
-[data-css-marquee] {
-  overflow: hidden;
-}
-/* List must not wrap so its width is the full content width for animation duration */
-[data-css-marquee-list] {
-  display: inline-flex;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-  animation: translateX 30s linear infinite;
-  animation-play-state: paused;
-}
-@keyframes translateX {
-  to {
-    transform: translateX(-100%);
-  }
-}
