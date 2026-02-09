@@ -1,0 +1,18 @@
+<!--
+  Paste this into Webflow: Site Settings → Custom Code → Head code (or Before </body> tag).
+  Runs on every page load/refresh so the window starts at scroll 0.
+  No dependencies; runs before your main JS and Lenis.
+-->
+<script>
+(function() {
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+  document.addEventListener('DOMContentLoaded', function() {
+    window.scrollTo(0, 0);
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  });
+  window.addEventListener('load', function() { window.scrollTo(0, 0); });
+  window.addEventListener('pageshow', function() { window.scrollTo(0, 0); });
+})();
+</script>

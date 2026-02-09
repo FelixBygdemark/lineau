@@ -1,39 +1,10 @@
-// ––––––––– Home page: scroll to top on refresh
-// Use pathname only (no DOM/Webflow), works in all environments
-var isHome = (function () {
-  var p = window.location.pathname;
-  return !p || p === '/' || p === '/index.html';
-})();
-
-if ("scrollRestoration" in history) {
-  history.scrollRestoration = "manual";
-}
-
-function scrollToTop() {
-  window.scrollTo(0, 0);
-  if (document.documentElement) document.documentElement.scrollTop = 0;
-  if (document.body) document.body.scrollTop = 0;
-}
-
-// Scroll to top immediately (before DOM ready, to catch early scroll)
-if (isHome) {
-  scrollToTop();
-}
+// Scroll-to-top on load/refresh is handled by Webflow custom code (see webflow-scroll-to-top.html)
 
 // Ensure Webflow & DOM are ready
 window.Webflow ||= [];
 window.Webflow.push(() => {
   console.log("Custom JS loaded via Netlify.");
   document.body.classList.add("wf-custom");
-  
-  // Scroll to top again when Webflow is ready (in case browser restored position)
-  if (isHome) {
-    scrollToTop();
-    requestAnimationFrame(() => {
-      scrollToTop();
-      lenis.scrollTo(0, { immediate: true });
-    });
-  }
 });
 
 
@@ -45,17 +16,10 @@ gsap.registerPlugin(InertiaPlugin);
 // Initialize Lenis smooth scrolling
 const lenis = new Lenis();
 
-// Force Lenis to scroll to top immediately after initialization (for home page)
-if (isHome) {
-  lenis.scrollTo(0, { immediate: true });
-}
-
-// Run scroll-to-top when page is shown (refresh, back/forward) so we win over browser restore
+// Sync Lenis with top of page (custom code in head does window scroll; we align Lenis once it exists)
+lenis.scrollTo(0, { immediate: true });
 window.addEventListener('pageshow', function () {
-  if (isHome) {
-    scrollToTop();
-    lenis.scrollTo(0, { immediate: true });
-  }
+  lenis.scrollTo(0, { immediate: true });
 });
 
 // Listen for the 'scroll' event and log the event data to the console
@@ -147,11 +111,7 @@ document.querySelectorAll('[data-scroll-skew]').forEach((el) => {
 
 // Refresh after images/fonts load (bounds change affect velocity timing)
 window.addEventListener('load', () => {
-  // Ensure scroll stays at top on home page (in case anything moved it)
-  if (isHome) {
-    scrollToTop();
-    lenis.scrollTo(0, { immediate: true });
-  }
+  lenis.scrollTo(0, { immediate: true });
   ScrollTrigger.refresh();
 });
 
