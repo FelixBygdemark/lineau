@@ -1,9 +1,4 @@
-/* Lock body scroll during home page load animation (class added by Webflow/GSAP) */
-body.is--locked {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-}
+
 
 /* Hide scrollbar for Chrome, Safari, and Edge */
 .element::-webkit-scrollbar {

@@ -2,12 +2,26 @@
 // Lock (.is--locked) is added/removed by Webflow + GSAP; we only set restoration + initial scroll
 const HOME_PAGE_ID = "680ff6fa57f13571278fb219";
 
-const isHome = document.documentElement.dataset.wfPage === HOME_PAGE_ID;
-if (isHome) {
-  if ("scrollRestoration" in history) {
-    history.scrollRestoration = "manual";
-  }
+// Set scroll restoration to manual FIRST, before anything else
+if ("scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+
+// Function to force scroll to top (covers all scroll containers)
+function scrollToTop() {
   window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  if (window.pageYOffset !== 0) {
+    window.scrollTo(0, 0);
+  }
+}
+
+const isHome = document.documentElement.dataset.wfPage === HOME_PAGE_ID;
+
+// Scroll to top immediately (before DOM ready, to catch early scroll)
+if (isHome) {
+  scrollToTop();
 }
 
 // Ensure Webflow & DOM are ready
@@ -15,6 +29,15 @@ window.Webflow ||= [];
 window.Webflow.push(() => {
   console.log("Custom JS loaded via Netlify.");
   document.body.classList.add("wf-custom");
+  
+  // Scroll to top again when Webflow is ready (in case browser restored position)
+  if (isHome) {
+    scrollToTop();
+    requestAnimationFrame(() => {
+      scrollToTop();
+      lenis.scrollTo(0, { immediate: true });
+    });
+  }
 });
 
 
@@ -25,6 +48,11 @@ gsap.registerPlugin(InertiaPlugin);
 
 // Initialize Lenis smooth scrolling
 const lenis = new Lenis();
+
+// Force Lenis to scroll to top immediately after initialization (for home page)
+if (isHome) {
+  lenis.scrollTo(0, { immediate: true });
+}
 
 // Listen for the 'scroll' event and log the event data to the console
 lenis.on('scroll', (e) => {
@@ -114,7 +142,14 @@ document.querySelectorAll('[data-scroll-skew]').forEach((el) => {
 });
 
 // Refresh after images/fonts load (bounds change affect velocity timing)
-window.addEventListener('load', () => ScrollTrigger.refresh());
+window.addEventListener('load', () => {
+  // Ensure scroll stays at top on home page (in case anything moved it)
+  if (isHome) {
+    scrollToTop();
+    lenis.scrollTo(0, { immediate: true });
+  }
+  ScrollTrigger.refresh();
+});
 
 
 
