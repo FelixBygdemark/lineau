@@ -1,23 +1,19 @@
-// ––––––––– Home page: scroll to top on refresh, no scroll during load animation
-// Lock (.is--locked) is added/removed by Webflow + GSAP; we only set restoration + initial scroll
-const HOME_PAGE_ID = "680ff6fa57f13571278fb219";
+// ––––––––– Home page: scroll to top on refresh
+// Use pathname only (no DOM/Webflow), works in all environments
+var isHome = (function () {
+  var p = window.location.pathname;
+  return !p || p === '/' || p === '/index.html';
+})();
 
-// Set scroll restoration to manual FIRST, before anything else
 if ("scrollRestoration" in history) {
   history.scrollRestoration = "manual";
 }
 
-// Function to force scroll to top (covers all scroll containers)
 function scrollToTop() {
   window.scrollTo(0, 0);
-  document.documentElement.scrollTop = 0;
-  document.body.scrollTop = 0;
-  if (window.pageYOffset !== 0) {
-    window.scrollTo(0, 0);
-  }
+  if (document.documentElement) document.documentElement.scrollTop = 0;
+  if (document.body) document.body.scrollTop = 0;
 }
-
-const isHome = document.documentElement.dataset.wfPage === HOME_PAGE_ID;
 
 // Scroll to top immediately (before DOM ready, to catch early scroll)
 if (isHome) {
@@ -53,6 +49,14 @@ const lenis = new Lenis();
 if (isHome) {
   lenis.scrollTo(0, { immediate: true });
 }
+
+// Run scroll-to-top when page is shown (refresh, back/forward) so we win over browser restore
+window.addEventListener('pageshow', function () {
+  if (isHome) {
+    scrollToTop();
+    lenis.scrollTo(0, { immediate: true });
+  }
+});
 
 // Listen for the 'scroll' event and log the event data to the console
 lenis.on('scroll', (e) => {
