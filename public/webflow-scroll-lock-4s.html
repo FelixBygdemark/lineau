@@ -1,0 +1,27 @@
+<!--
+  Paste this into Webflow: Site Settings → Custom Code → Head code (or Before </body> tag).
+  Locks scrolling for the first 4.5 seconds after the page loads.
+-->
+<style>
+body.wf-scroll-lock { overflow: hidden; position: fixed; width: 100%; }
+</style>
+<script>
+(function() {
+  var durationMs = 4500;
+  function lock() {
+    if (document.body) document.body.classList.add('wf-scroll-lock');
+  }
+  function unlock() {
+    if (document.body) document.body.classList.remove('wf-scroll-lock');
+  }
+  if (document.body) {
+    lock();
+    setTimeout(unlock, durationMs);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      lock();
+      setTimeout(unlock, durationMs);
+    });
+  }
+})();
+</script>

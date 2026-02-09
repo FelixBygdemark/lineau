@@ -16,8 +16,15 @@ gsap.registerPlugin(InertiaPlugin);
 // Initialize Lenis smooth scrolling
 const lenis = new Lenis();
 
-// Sync Lenis with top of page (custom code in head does window scroll; we align Lenis once it exists)
+// Start with scroll at top and scrolling stopped (for preloader / first 5s)
 lenis.scrollTo(0, { immediate: true });
+lenis.stop();
+
+// Re-enable scrolling after 5 seconds
+setTimeout(function () {
+  lenis.start();
+}, 5000);
+
 window.addEventListener('pageshow', function () {
   lenis.scrollTo(0, { immediate: true });
 });
