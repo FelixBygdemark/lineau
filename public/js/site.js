@@ -1076,13 +1076,14 @@ function initHeroChapterTitles() {
   if (N === 0) return;
 
   // Start hidden; first title will be shown when first chapter is in range
-  gsap.set(sortedTitles, { opacity: 0, y: 24 });
+  gsap.set(sortedTitles, { opacity: 0, yPercent: -120 });
   sortedTitles.forEach((t) => t.classList.remove("is-active"));
 
 
   const vh = () => window.innerHeight;
   const scrollY = () => window.scrollY ?? window.pageYOffset;
   const activeLine = () => vh() * 0.35;
+  const transitionFrac = 0.12;
 
   ScrollTrigger.create({
     trigger: sortedChapters[0],
@@ -1104,20 +1105,33 @@ function initHeroChapterTitles() {
       for (let i = 0; i < N; i++) {
         const tIn = progressAtChapter[i];
         const tOut = progressAtChapter[i + 1] ?? 1;
+        const seg = Math.max(0.001, tOut - tIn);
+        const d = seg * transitionFrac;
         let opacity = 0;
-        let y = 24;
+        let yPercent = -120;
         if (p <= tIn) {
+          yPercent = -120;
           opacity = 0;
-          y = 24;
-        } else if (p >= tOut) {
-          opacity = 0;
-          y = -24;
-        } else {
-          const t = (p - tIn) / (tOut - tIn || 1);
+        } else if (p < tIn + d) {
+          const t = (p - tIn) / d;
+          yPercent = -120 + 120 * t;
+          opacity = t;
+        } else if (p < tOut - d) {
+          yPercent = 0;
           opacity = 1;
-          y = 24 - 48 * t;
+        } else {
+          const outStart = tOut - d;
+          const outEnd = Math.min(tOut + d, 1);
+          if (p >= outEnd) {
+            yPercent = 120;
+            opacity = 0;
+          } else {
+            const t = (p - outStart) / (outEnd - outStart || 1);
+            yPercent = 120 * t;
+            opacity = 1 - t;
+          }
         }
-        gsap.set(sortedTitles[i], { opacity, y });
+        gsap.set(sortedTitles[i], { opacity, yPercent });
         sortedTitles[i].classList.toggle("is-active", opacity > 0.5);
       }
     },
