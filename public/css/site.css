@@ -267,7 +267,7 @@ body:has([data-cursor]:hover) .cursor {
 	to {
 		transform: translateX(-25%);
 	}
-
+}
 
   /* Bunny player */
   /* Animation */
@@ -320,5 +320,32 @@ body:has([data-cursor]:hover) .cursor {
 .ratio-16-9 { aspect-ratio: 16 / 9; }
 .ratio-3-2 { aspect-ratio: 3 / 2; }
 .ratio-2-3 { aspect-ratio: 2 / 3; }
+
+
+/* ––––– Hero chapter titles stack (scroll-synced with case chapters) ––––– */
+/* Place [data-hero-titles] inside your fixed hero (e.g. hero_content_contain). */
+[data-hero-titles] {
+  position: relative;
+  /* Match the height/area where hero_title sits so stacked titles align */
+  min-height: 1em;
+}
+
+/* Stack all chapter titles in the same spot; JS controls opacity/transform */
+[data-hero-chapter-title] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+  /* Optional: animate from below for “in” and “out” */
+  transform: translateY(0.5em);
+  will-change: opacity, transform;
+}
+
+[data-hero-chapter-title].is-active {
+  pointer-events: auto;
+  /* Opacity/transform driven by GSAP ScrollTrigger scrub */
+}
 
 
