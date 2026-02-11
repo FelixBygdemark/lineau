@@ -1,0 +1,26 @@
+<!--
+  HOME PAGE ONLY – Paste this into Webflow:
+  Pages → [Home] → Page settings → Custom code → Page embed code
+  (or "Before </body> tag" for the Home page only)
+
+  Runs the 5s scroll lock (scroll at top, Lenis stopped, then start after 5s).
+  Requires site.js to expose window.lenis.
+-->
+<script>
+(function() {
+  function runHomeScrollLock() {
+    if (!window.lenis) return false;
+    window.lenis.scrollTo(0, { immediate: true });
+    window.lenis.stop();
+    setTimeout(function() {
+      window.lenis.start();
+    }, 5000);
+    return true;
+  }
+  if (runHomeScrollLock()) return;
+  var tries = 0;
+  var id = setInterval(function() {
+    if (runHomeScrollLock() || ++tries > 100) clearInterval(id);
+  }, 50);
+})();
+</script>

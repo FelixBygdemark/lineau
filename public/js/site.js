@@ -3,27 +3,17 @@
 // Ensure Webflow & DOM are ready
 window.Webflow ||= [];
 window.Webflow.push(() => {
-  console.log("Custom JS loaded via Netlify.");
   document.body.classList.add("wf-custom");
 });
 
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 gsap.registerPlugin(ScrambleTextPlugin);
-gsap.registerPlugin(DrawSVGPlugin);
 gsap.registerPlugin(InertiaPlugin);
 
 // Initialize Lenis smooth scrolling
 const lenis = new Lenis();
-
-// Start with scroll at top and scrolling stopped (for preloader / first 5s)
-lenis.scrollTo(0, { immediate: true });
-lenis.stop();
-
-// Re-enable scrolling after 5 seconds
-setTimeout(function () {
-  lenis.start();
-}, 5000);
+window.lenis = lenis; // Expose for Webflow page embed (home scroll lock)
 
 window.addEventListener('pageshow', function () {
   lenis.scrollTo(0, { immediate: true });
@@ -1039,108 +1029,4 @@ function initFlipOnScroll() {
 document.addEventListener('DOMContentLoaded', function() {
   initFlipOnScroll();
 });
-
-
-
-
-// ––––– Hero chapter titles: scrubbed ScrollTrigger sync with case chapters –––––
-// Uses data attributes to tie hero titles to scroll chapters:
-//   [data-hero-titles]         – wrapper for stacked titles (e.g. inside hero_content_contain)
-//   [data-hero-chapter-title]  – each title element, with data-chapter-index="1", "2", …
-//   [data-case-chapter]        – each chapter block in the page, with data-chapter-index="1", "2", …
-// As you scroll, the active chapter drives which title is visible (smooth crossfade, scrubbed).
-
-function initHeroChapterTitles() {
-  const titlesWrap = document.querySelector("[data-hero-titles]");
-  const titles = document.querySelectorAll("[data-hero-chapter-title]");
-  const chapters = document.querySelectorAll("[data-case-chapter]");
-
-  if (!titlesWrap || !titles.length || !chapters.length) return;
-
-  // Sort by data-chapter-index so order is explicit
-  const byIndex = (a, b) => {
-    const i = parseInt(a.getAttribute("data-chapter-index"), 10) || 0;
-    const j = parseInt(b.getAttribute("data-chapter-index"), 10) || 0;
-    return i - j;
-  };
-  const sortedTitles = Array.from(titles).sort(byIndex);
-  const sortedChapters = Array.from(chapters).sort(byIndex);
-
-  if (sortedTitles.length !== sortedChapters.length) {
-    console.warn(
-      "Hero chapter titles: count of [data-hero-chapter-title] does not match [data-case-chapter]. Syncing by order."
-    );
-  }
-
-  const N = Math.min(sortedTitles.length, sortedChapters.length);
-  if (N === 0) return;
-
-  // Start hidden; first title will be shown when first chapter is in range
-  gsap.set(sortedTitles, { opacity: 0, yPercent: -120 });
-  sortedTitles.forEach((t) => t.classList.remove("is-active"));
-
-
-  const vh = () => window.innerHeight;
-  const scrollY = () => window.scrollY ?? window.pageYOffset;
-  const activeLine = () => vh() * 0.35;
-  const transitionFrac = 0.12;
-
-  ScrollTrigger.create({
-    trigger: sortedChapters[0],
-    start: "top 65%",
-    endTrigger: sortedChapters[sortedChapters.length - 1],
-    end: "bottom 35%",
-    scrub: 0.5,
-    onUpdate: (self) => {
-      const start = self.start;
-      const end = self.end;
-      const range = Math.max(1, end - start);
-      const progressAtChapter = [0];
-      for (let i = 0; i < sortedChapters.length; i++) {
-        const rect = sortedChapters[i].getBoundingClientRect();
-        const chapterActiveScroll = scrollY() + rect.top - activeLine();
-        progressAtChapter.push(gsap.utils.clamp(0, 1, (chapterActiveScroll - start) / range));
-      }
-      const p = self.progress;
-      for (let i = 0; i < N; i++) {
-        const tIn = progressAtChapter[i];
-        const tOut = progressAtChapter[i + 1] ?? 1;
-        const seg = Math.max(0.001, tOut - tIn);
-        const d = seg * transitionFrac;
-        let opacity = 0;
-        let yPercent = -120;
-        if (p <= tIn) {
-          yPercent = -120;
-          opacity = 0;
-        } else if (p < tIn + d) {
-          const t = (p - tIn) / d;
-          yPercent = -120 + 120 * t;
-          opacity = t;
-        } else if (p < tOut - d) {
-          yPercent = 0;
-          opacity = 1;
-        } else {
-          const outStart = tOut - d;
-          const outEnd = Math.min(tOut + d, 1);
-          if (p >= outEnd) {
-            yPercent = 120;
-            opacity = 0;
-          } else {
-            const t = (p - outStart) / (outEnd - outStart || 1);
-            yPercent = 120 * t;
-            opacity = 1 - t;
-          }
-        }
-        gsap.set(sortedTitles[i], { opacity, yPercent });
-        sortedTitles[i].classList.toggle("is-active", opacity > 0.5);
-      }
-    },
-  });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  initHeroChapterTitles();
-});
-window.Webflow = window.Webflow || [];
-window.Webflow.push(initHeroChapterTitles);
 
