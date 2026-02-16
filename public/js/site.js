@@ -117,7 +117,6 @@ window.addEventListener('load', () => {
 
 
 //OSMO Global Parallax
-gsap.registerPlugin(ScrollTrigger)
 
 function initGlobalParallax() {
   const mm = gsap.matchMedia()
@@ -199,6 +198,25 @@ document.addEventListener("DOMContentLoaded", () => {
 })
 
 
+
+
+
+// ––––––––– Parallax using data-parallax
+// document.querySelectorAll('[data-parallax]').forEach(el => {
+//   const parallaxValue = parseFloat(el.getAttribute('data-parallax')) || 10;
+  
+//   gsap.fromTo(el, { yPercent: -parallaxValue },
+//   {
+//     yPercent: parallaxValue,
+//     ease: "none",
+//     scrollTrigger: {
+//       trigger: el,
+//       start: "top bottom",
+//       end: "bottom top",
+//       scrub: true
+//     }
+//   });
+// });
 
 
 
