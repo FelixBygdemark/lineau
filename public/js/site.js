@@ -202,25 +202,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-// ––––––––– Parallax using data-parallax
-document.querySelectorAll('[data-parallax]').forEach(el => {
-  const parallaxValue = parseFloat(el.getAttribute('data-parallax')) || 10;
-  
-  gsap.fromTo(el, { yPercent: -parallaxValue },
-  {
-    yPercent: parallaxValue,
-    ease: "none",
-    scrollTrigger: {
-      trigger: el,
-      start: "top bottom",
-      end: "bottom top",
-      scrub: true
-    }
-  });
-});
-
-
-
 //Case card hover GPT
 document.querySelectorAll(".home_case_card").forEach((wrap) => {
   const imgClip = wrap.querySelector(".case_media_parallax");
