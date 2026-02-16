@@ -154,13 +154,13 @@ function initGlobalParallax() {
             const scrubAttr = trigger.getAttribute("data-parallax-scrub")
             const scrub = scrubAttr ? parseFloat(scrubAttr) : true
             
-            // Get the start position in % 
+            // Get the start position in %
             const startAttr = trigger.getAttribute("data-parallax-start")
-            const startVal = startAttr !== null ? parseFloat(startAttr) : 20
-            
+            const startVal = (startAttr != null && startAttr !== "") ? parseFloat(startAttr) : 20
+
             // Get the end position in %
             const endAttr = trigger.getAttribute("data-parallax-end")
-            const endVal = endAttr !== null ? parseFloat(endAttr) : -20
+            const endVal = (endAttr != null && endAttr !== "") ? parseFloat(endAttr) : -20
             
             // Get the start value of the ScrollTrigger
             const scrollStartRaw = trigger.getAttribute("data-parallax-scroll-start") || "top bottom"
@@ -192,10 +192,17 @@ function initGlobalParallax() {
   )
 }
 
-// Initialize Global Parallax Setup
-document.addEventListener("DOMContentLoaded", () => {
-  initGlobalParallax()
-})
+// Initialize Global Parallax Setup (run now if DOM already ready, e.g. script at end of body).
+// If you animate parallax triggers into view on page load (e.g. from -yPercent), either:
+// 1) Call ScrollTrigger.refresh() in the onComplete of that entrance so trigger positions are recalculated, or
+// 2) Set window.__PARALLAX_DEFER_INIT__ = true before this script runs, then call initGlobalParallax() (and ScrollTrigger.refresh()) when the entrance finishes.
+if (!window.__PARALLAX_DEFER_INIT__) {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initGlobalParallax)
+  } else {
+    initGlobalParallax()
+  }
+}
 
 
 
