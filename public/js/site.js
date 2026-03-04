@@ -1423,16 +1423,16 @@ window.Webflow.push(function initContactFlyout() {
   const flyoutTl = gsap.timeline({ paused: true });
   // data-contact="overlay"
   if (overlay) flyoutTl.to(overlay, {
-    opacity: 0.4,
-    duration: 0.7,
-    ease: 'power4.inOut',
+    opacity: 0.6,
+    duration: 0.2,
+    ease: 'linear',
   }, 0);
   // data-contact="panel" (.contact-flyout_panel) 110% → 0%
   flyoutTl.to(panel, {
     xPercent: 0,
-    duration: 0.8,
+    duration: 0.5,
     ease: 'power4.inOut',
-  }, 0.2);
+  }, 0);
   // data-contact="header"
   if (headerEl) flyoutTl.to(headerEl, {
     yPercent: 0,
@@ -1557,11 +1557,11 @@ window.Webflow.push(function initContactFlyout() {
       duration: closeDuration * 1.2,
       ease: closeEase,
     }, closeDuration * 0.1);
-    // data-contact="overlay"
+    // data-contact="overlay" — longer, softer fade to avoid abrupt flash
     if (overlay) closeTl.to(overlay, {
       opacity: 0,
-      duration: closeDuration * 0.8,
-      ease: closeEase,
+      duration: 0.5,
+      ease: 'linear',
     }, closeDuration * 0.1);
   }
 
