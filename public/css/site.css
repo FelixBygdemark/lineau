@@ -301,3 +301,20 @@ body:has([data-cursor]:hover) .cursor {
   transition: transform 0.8s cubic-bezier(0.625, 0, 0.875, 0);
   position: absolute;
 }
+
+
+/* OSMO Custom form validation */
+/* Field: Error */
+[data-validate].is--error input,
+[data-validate].is--error textarea {
+  border-color: #FF4C24;
+}
+
+[data-validate].is--error .form-field-icon.is--error {
+  opacity: 1;
+}
+
+/* Field: Success */
+[data-validate].is--success .form-field-icon.is--success {
+  opacity: 1;
+}
