@@ -1425,8 +1425,6 @@ window.Webflow.push(function initContactFlyout() {
     state.isOpen = true;
     if (closeTween) closeTween.kill();
     if (window.lenis) window.lenis.stop();
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
     wrap.setAttribute('aria-hidden', 'false');
 
     const tl = gsap.timeline({ overwrite: true });
@@ -1571,8 +1569,6 @@ window.Webflow.push(function initContactFlyout() {
       opacity: 0,
     }, 0.3);
     tl.call(() => {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
       wrap.setAttribute('aria-hidden', 'true');
       if (window.lenis) window.lenis.start();
     }, null, 0.3);
