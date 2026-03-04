@@ -1439,25 +1439,25 @@ window.Webflow.push(function initContactFlyout() {
       tl.set(overlay, { pointerEvents: 'auto' }, 0);
       tl.to(overlay, {
         opacity: 0.4,
-        duration: 0.25,
-        ease: 'power2.out',
+        duration: 0.7,
+        ease: 'power4.inOut',
       }, 0);
     }
     // data-contact="panel" (.contact-flyout_panel) 110% → 0%
     tl.to(panel, {
       xPercent: 0,
-      duration: 0.4,
-      ease: 'power3.out',
-    }, 0);
+      duration: 0.8,
+      ease: 'power4.inOut',
+    }, 0.2);
 
     // Stagger inner animations after panel starts moving (e.g. 0.15s in)
-    const innerStart = 0.15;
+    const innerStart = 0.3;
     // data-contact="header"
     if (headerEl) tl.to(headerEl, {
       yPercent: 0,
       opacity: 1,
-      duration: 0.4,
-      ease: 'power3.out',
+      duration: 0.6,
+      ease: 'power4.out',
     }, innerStart);
     // data-contact="title" (split by lines)
     if (titleEl) {
@@ -1465,16 +1465,16 @@ window.Webflow.push(function initContactFlyout() {
         tl.to(titleSplit.lines, {
           yPercent: 0,
           opacity: 1,
-          duration: 0.4,
-          ease: 'power3.out',
+          duration: 0.5,
+          ease: 'power4.out',
           stagger: 0.05,
         }, innerStart);
       } else {
         tl.to(titleEl, {
           yPercent: 0,
           opacity: 1,
-          duration: 0.4,
-          ease: 'power3.out',
+          duration: 0.5,
+          ease: 'power4.out',
         }, innerStart);
       }
     }
@@ -1482,16 +1482,16 @@ window.Webflow.push(function initContactFlyout() {
     if (linksEl) tl.to(linksEl, {
       yPercent: 0,
       opacity: 1,
-      duration: 0.4,
-      ease: 'power3.out',
+      duration: 0.5,
+      ease: 'power4.out',
     }, innerStart + 0.05);
     // data-contact="form" (children)
     if (formEl && formEl.children.length) {
       tl.to(formEl.children, {
         yPercent: 0,
         opacity: 1,
-        duration: 0.4,
-        ease: 'power3.out',
+        duration: 0.5,
+        ease: 'power4.out',
         stagger: 0.03,
       }, innerStart + 0.1);
     }
