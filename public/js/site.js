@@ -1477,13 +1477,8 @@ window.Webflow.push(function initContactFlyout() {
     }, innerStart + 0.3);
   }
 
-  // On close (reverse) finish: hide wrap, release overlay pointer-events, Lenis start
-  flyoutTl.eventCallback('onReverseComplete', () => {
-    gsap.set(wrap, { pointerEvents: 'none', opacity: 0 });
-    if (overlay) gsap.set(overlay, { pointerEvents: 'none' });
-    wrap.setAttribute('aria-hidden', 'true');
-    if (window.lenis) window.lenis.start();
-  });
+  // On open complete: nothing extra. On close we use a separate timeline (see close()) so we don't rely on reverse.
+  flyoutTl.eventCallback('onReverseComplete', null); // remove reverse callback; close timeline handles cleanup
 
   function open() {
     if (state.isOpen) return;
@@ -1499,15 +1494,37 @@ window.Webflow.push(function initContactFlyout() {
     flyoutTl.progress(0);
     flyoutTl.play();
   }
+
   function close() {
     if (!state.isOpen) return;
     state.isOpen = false;
+    flyoutTl.pause(); // stop open timeline if still playing
 
-    // Ensure timeline is at the end (fully open) then play in reverse
-    flyoutTl.progress(1);
-    flyoutTl.reversed(true);
-    flyoutTl.timeScale(1.5); // close ~50% faster
-    flyoutTl.play();
+    // Explicit close timeline (mirror of open, faster) — more reliable than playing open timeline in reverse
+    const closeTl = gsap.timeline({
+      onComplete: () => {
+        gsap.set(wrap, { pointerEvents: 'none', opacity: 0 });
+        if (overlay) gsap.set(overlay, { pointerEvents: 'none' });
+        wrap.setAttribute('aria-hidden', 'true');
+        if (window.lenis) window.lenis.start();
+      },
+    });
+    const closeDuration = 0.35;
+    const closeEase = 'power3.in';
+    if (headerEl) closeTl.to(headerEl, { yPercent: 150, opacity: 0, duration: closeDuration * 0.6, ease: closeEase }, 0);
+    if (titleEl) {
+      if (titleSplit?.lines) {
+        closeTl.to(titleSplit.lines, { yPercent: 110, opacity: 0, duration: closeDuration * 0.6, ease: closeEase, stagger: 0.02 }, 0);
+      } else {
+        closeTl.to(titleEl, { yPercent: 110, opacity: 0, duration: closeDuration * 0.6, ease: closeEase }, 0);
+      }
+    }
+    if (linksEl) closeTl.to(linksEl, { yPercent: 150, opacity: 0, duration: closeDuration * 0.6, ease: closeEase }, 0);
+    if (formEl && formEl.children.length) {
+      closeTl.to(formEl.children, { yPercent: 150, opacity: 0, duration: closeDuration * 0.6, ease: closeEase, stagger: 0.015 }, 0);
+    }
+    closeTl.to(panel, { xPercent: 110, duration: closeDuration * 1.2, ease: closeEase }, closeDuration * 0.1);
+    if (overlay) closeTl.to(overlay, { opacity: 0, duration: closeDuration * 0.8, ease: closeEase }, closeDuration * 0.1);
   }
 
   openTriggers.forEach((el) => {
