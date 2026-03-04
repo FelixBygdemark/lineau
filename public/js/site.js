@@ -1216,9 +1216,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // OSMO Custom form validation
 function initBasicFormValidation() {
-  const forms = document.querySelectorAll('[data-form-validate]');
+  const formElements = document.querySelectorAll('form[data-form-validate]');
 
-  forms.forEach((form) => {
+  formElements.forEach((form) => {
     const fields = form.querySelectorAll('[data-validate] input, [data-validate] textarea');
     const submitButtonDiv = form.querySelector('[data-submit]'); // The div wrapping the submit button
     // Support both <input type="submit"> and <button type="submit"> (Webflow often uses button)
@@ -1337,6 +1337,21 @@ function initBasicFormValidation() {
         allowSubmit = false;
       }
     });
+
+    // Click on the [data-submit] wrapper (e.g. div with "Submit" text) — the real input is often hidden in Webflow
+    if (submitButtonDiv) {
+      submitButtonDiv.addEventListener('click', function (e) {
+        e.preventDefault();
+        trySubmit();
+      });
+      // Allow Enter on the wrapper if it has tabindex (keyboard submit)
+      submitButtonDiv.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          trySubmit();
+        }
+      });
+    }
 
     // Handle pressing the "Enter" key
     form.addEventListener('keydown', function (event) {
