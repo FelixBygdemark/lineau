@@ -1393,7 +1393,12 @@ window.Webflow.push(function initContactFlyout() {
   let titleSplit = null; // SplitText instance for cleanup
 
   // Initial state: wrap pointer-events only (do not touch flex/layout), overlay 0%, panel at 110% xPercent, inner elements at "from" values
-  gsap.set(wrap, { pointerEvents: 'none' });
+  // Wrap is made visible by JS on open; keep opacity 0 and pointer-events none until then so it doesn't show or block
+  gsap.set(wrap, {
+    visibility: 'visible',
+    opacity: 0,
+    pointerEvents: 'none',
+  });
   if (overlay) gsap.set(overlay, { opacity: 0 });
   gsap.set(panel, { xPercent: 110 });
 
@@ -1425,8 +1430,12 @@ window.Webflow.push(function initContactFlyout() {
     wrap.setAttribute('aria-hidden', 'false');
 
     const tl = gsap.timeline({ overwrite: true });
-    // .contact-flyout_wrap (pointer-events on)
-    tl.set(wrap, { pointerEvents: 'auto' });
+    // .contact-flyout_wrap (show wrap + pointer-events on)
+    tl.set(wrap, {
+      visibility: 'visible',
+      opacity: 1,
+      pointerEvents: 'auto',
+    });
     // data-contact="overlay"
     if (overlay) tl.to(overlay, {
       opacity: 0.4,
@@ -1550,9 +1559,10 @@ window.Webflow.push(function initContactFlyout() {
       duration: 0.25,
       ease: 'power2.in',
     }, 0.05);
-    // .contact-flyout_wrap (pointer-events off + cleanup)
+    // .contact-flyout_wrap (pointer-events off + hide wrap)
     tl.set(wrap, {
       pointerEvents: 'none',
+      opacity: 0,
     }, 0.3);
     tl.call(() => {
       document.body.style.overflow = '';
