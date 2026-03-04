@@ -1480,7 +1480,7 @@ window.Webflow.push(function initContactFlyout() {
   function open() {
     if (state.isOpen) return;
     state.isOpen = true;
-    if (window.lenis) window.lenis.stop();
+    // if (window.lenis) window.lenis.stop();
     wrap.setAttribute('aria-hidden', 'false');
 
     gsap.set(wrap, { visibility: 'visible', opacity: 1, pointerEvents: 'auto' });
@@ -1504,7 +1504,7 @@ window.Webflow.push(function initContactFlyout() {
         gsap.set(wrap, { pointerEvents: 'none', opacity: 0 });
         if (overlay) gsap.set(overlay, { pointerEvents: 'none' });
         wrap.setAttribute('aria-hidden', 'true');
-        if (window.lenis) window.lenis.start();
+        // if (window.lenis) window.lenis.start();
       },
     });
 
