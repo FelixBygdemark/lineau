@@ -1419,7 +1419,7 @@ window.Webflow.push(function initContactFlyout() {
   if (formEl) gsap.set(formEl.children, { yPercent: 150, opacity: 0 });
 
   // Open timeline
-  const innerStart = 0.5;
+  const innerStart = 0.2;
   const flyoutTl = gsap.timeline({ paused: true });
   // data-contact="overlay"
   if (overlay) flyoutTl.to(overlay, {
