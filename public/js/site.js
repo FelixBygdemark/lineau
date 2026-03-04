@@ -1499,11 +1499,12 @@ window.Webflow.push(function initContactFlyout() {
     flyoutTl.progress(0);
     flyoutTl.play();
   }
-
   function close() {
     if (!state.isOpen) return;
     state.isOpen = false;
 
+    // Ensure timeline is at the end (fully open) then play in reverse
+    flyoutTl.progress(1);
     flyoutTl.reversed(true);
     flyoutTl.timeScale(1.5); // close ~50% faster
     flyoutTl.play();
