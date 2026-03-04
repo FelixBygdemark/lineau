@@ -1370,14 +1370,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // Contact Flyout — GSAP-driven panel. Open: [data-contact="open"]. Close: [data-contact="close"] or click [data-contact="overlay"] or Escape.
-// Structure: .contact-flyout_wrap > [data-contact="overlay"] + [data-contact="panel"]. Inside panel: [data-contact="header"], [data-contact="title"], [data-contact="links"], [data-contact="form"]
+// Structure: .contact-flyout_wrap (data-contact="wrapper") — flex layout, do not change. .contact-flyout_overlay (data-contact="overlay"). .contact-flyout_panel (data-contact="panel") slides 110% → 0% xPercent. Inside panel: [data-contact="header"], [data-contact="title"], [data-contact="links"], [data-contact="form"]
 window.Webflow ||= [];
 window.Webflow.push(function initContactFlyout() {
   const wrap = document.querySelector('.contact-flyout_wrap');
   if (!wrap) return;
 
   const overlay = wrap.querySelector('[data-contact="overlay"]');
-  const panel = wrap.querySelector('[data-contact="panel"]') || wrap.querySelector('.contact-flyout') || wrap.firstElementChild;
+  const panel = wrap.querySelector('[data-contact="panel"]') || wrap.querySelector('.contact-flyout_panel') || wrap.querySelector('.contact-flyout') || wrap.firstElementChild;
   const openTriggers = document.querySelectorAll('[data-contact="open"]');
   const closeTriggers = wrap.querySelectorAll('[data-contact="close"]');
 
@@ -1392,11 +1392,10 @@ window.Webflow.push(function initContactFlyout() {
   let closeTween = null;
   let titleSplit = null; // SplitText instance for cleanup
 
-  // Initial state: wrap hidden, overlay 0%, panel off-screen, inner elements at "from" values
-  gsap.set(wrap, { visibility: 'visible', display: 'grid', opacity: 1 });
+  // Initial state: wrap pointer-events only (do not touch flex/layout), overlay 0%, panel at 110% xPercent, inner elements at "from" values
   gsap.set(wrap, { pointerEvents: 'none' });
   if (overlay) gsap.set(overlay, { opacity: 0 });
-  gsap.set(panel, { xPercent: 100 });
+  gsap.set(panel, { xPercent: 110 });
 
   // Header: from yPercent 150, opacity 0
   if (headerEl) gsap.set(headerEl, { yPercent: 150, opacity: 0 });
@@ -1426,23 +1425,65 @@ window.Webflow.push(function initContactFlyout() {
     wrap.setAttribute('aria-hidden', 'false');
 
     const tl = gsap.timeline({ overwrite: true });
+    // .contact-flyout_wrap (pointer-events on)
     tl.set(wrap, { pointerEvents: 'auto' });
-    if (overlay) tl.to(overlay, { opacity: 0.4, duration: 0.25, ease: 'power2.out' }, 0);
-    tl.to(panel, { xPercent: 0, duration: 0.4, ease: 'power3.out' }, 0);
+    // data-contact="overlay"
+    if (overlay) tl.to(overlay, {
+      opacity: 0.4,
+      duration: 0.25,
+      ease: 'power2.out',
+    }, 0);
+    // data-contact="panel" (.contact-flyout_panel) 110% → 0%
+    tl.to(panel, {
+      xPercent: 0,
+      duration: 0.4,
+      ease: 'power3.out',
+    }, 0);
 
     // Stagger inner animations after panel starts moving (e.g. 0.15s in)
     const innerStart = 0.15;
-    if (headerEl) tl.to(headerEl, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, innerStart);
+    // data-contact="header"
+    if (headerEl) tl.to(headerEl, {
+      yPercent: 0,
+      opacity: 1,
+      duration: 0.4,
+      ease: 'power3.out',
+    }, innerStart);
+    // data-contact="title" (split by letters)
     if (titleEl) {
       if (titleSplit?.chars) {
-        tl.to(titleSplit.chars, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out', stagger: 0.005 }, innerStart);
+        tl.to(titleSplit.chars, {
+          yPercent: 0,
+          opacity: 1,
+          duration: 0.4,
+          ease: 'power3.out',
+          stagger: 0.005,
+        }, innerStart);
       } else {
-        tl.to(titleEl, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, innerStart);
+        tl.to(titleEl, {
+          yPercent: 0,
+          opacity: 1,
+          duration: 0.4,
+          ease: 'power3.out',
+        }, innerStart);
       }
     }
-    if (linksEl) tl.to(linksEl, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, innerStart + 0.05);
+    // data-contact="links"
+    if (linksEl) tl.to(linksEl, {
+      yPercent: 0,
+      opacity: 1,
+      duration: 0.4,
+      ease: 'power3.out',
+    }, innerStart + 0.05);
+    // data-contact="form" (children)
     if (formEl && formEl.children.length) {
-      tl.to(formEl.children, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out', stagger: 0.03 }, innerStart + 0.1);
+      tl.to(formEl.children, {
+        yPercent: 0,
+        opacity: 1,
+        duration: 0.4,
+        ease: 'power3.out',
+        stagger: 0.03,
+      }, innerStart + 0.1);
     }
 
     openTween = tl;
@@ -1454,22 +1495,65 @@ window.Webflow.push(function initContactFlyout() {
     if (openTween) openTween.kill();
 
     const tl = gsap.timeline({ overwrite: true });
-    // Reset inner elements
-    if (headerEl) tl.to(headerEl, { yPercent: 150, opacity: 0, duration: 0.2, ease: 'power3.in' }, 0);
+    // data-contact="header"
+    if (headerEl) tl.to(headerEl, {
+      yPercent: 150,
+      opacity: 0,
+      duration: 0.2,
+      ease: 'power3.in',
+    }, 0);
+    // data-contact="title" (split by letters)
     if (titleEl) {
       if (titleSplit?.chars) {
-        tl.to(titleSplit.chars, { yPercent: 110, opacity: 0, duration: 0.2, ease: 'power3.in', stagger: 0.005 }, 0);
+        tl.to(titleSplit.chars, {
+          yPercent: 110,
+          opacity: 0,
+          duration: 0.2,
+          ease: 'power3.in',
+          stagger: 0.005,
+        }, 0);
       } else {
-        tl.to(titleEl, { yPercent: 110, opacity: 0, duration: 0.2, ease: 'power3.in' }, 0);
+        tl.to(titleEl, {
+          yPercent: 110,
+          opacity: 0,
+          duration: 0.2,
+          ease: 'power3.in',
+        }, 0);
       }
     }
-    if (linksEl) tl.to(linksEl, { yPercent: 150, opacity: 0, duration: 0.2, ease: 'power3.in' }, 0);
+    // data-contact="links"
+    if (linksEl) tl.to(linksEl, {
+      yPercent: 150,
+      opacity: 0,
+      duration: 0.2,
+      ease: 'power3.in',
+    }, 0);
+    // data-contact="form" (children)
     if (formEl && formEl.children.length) {
-      tl.to(formEl.children, { yPercent: 150, opacity: 0, duration: 0.2, ease: 'power3.in', stagger: 0.02 }, 0);
+      tl.to(formEl.children, {
+        yPercent: 150,
+        opacity: 0,
+        duration: 0.2,
+        ease: 'power3.in',
+        stagger: 0.02,
+      }, 0);
     }
-    tl.to(panel, { xPercent: 100, duration: 0.3, ease: 'power3.in' }, 0.05);
-    if (overlay) tl.to(overlay, { opacity: 0, duration: 0.25, ease: 'power2.in' }, 0.05);
-    tl.set(wrap, { pointerEvents: 'none' }, 0.3);
+    // data-contact="panel" (.contact-flyout_panel) 0% → 110%
+    tl.to(panel, {
+      xPercent: 110,
+      duration: 0.3,
+      ease: 'power3.in',
+    }, 0.05);
+    // data-contact="overlay"
+    if (overlay) tl.to(overlay, {
+      opacity: 0,
+      duration: 0.25,
+      ease: 'power2.in',
+    }, 0.05);
+    // .contact-flyout_wrap (pointer-events off + cleanup)
+    tl.set(wrap, {
+      pointerEvents: 'none',
+    }, 0.3);
     tl.call(() => {
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
