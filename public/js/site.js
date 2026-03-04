@@ -1370,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // Contact Flyout — GSAP-driven panel. Open: [data-contact="open"]. Close: [data-contact="close"] or click [data-contact="overlay"] or Escape.
-// Structure: .contact-flyout_wrap (data-contact="wrapper") — flex layout, do not change. .contact-flyout_overlay (data-contact="overlay"). .contact-flyout_panel (data-contact="panel") slides 110% → 0% xPercent. Inside panel: [data-contact="header"], [data-contact="title"], [data-contact="links"], [data-contact="form"]
+// Structure: .contact-flyout_wrap (data-contact="wrapper") — flex layout, do not change. .contact-flyout_overlay (data-contact="overlay"). .contact-flyout_panel (data-contact="panel") slides 110% → 0% xPercent. Inside panel: [data-contact="header"], [data-contact="title"] (SplitText lines), [data-contact="links"], [data-contact="form"]
 window.Webflow ||= [];
 window.Webflow.push(function initContactFlyout() {
   const wrap = document.querySelector('.contact-flyout_wrap');
@@ -1404,11 +1404,11 @@ window.Webflow.push(function initContactFlyout() {
 
   // Header: from yPercent 150, opacity 0
   if (headerEl) gsap.set(headerEl, { yPercent: 150, opacity: 0 });
-  // Title: split by letters, overflow hidden, from yPercent 110, opacity 0
+  // Title: split by lines, overflow hidden, from yPercent 110, opacity 0
   if (titleEl && typeof SplitText !== 'undefined') {
     titleEl.style.overflow = 'hidden';
-    titleSplit = new SplitText(titleEl, { type: 'chars' });
-    gsap.set(titleSplit.chars, { yPercent: 110, opacity: 0 });
+    titleSplit = new SplitText(titleEl, { type: 'lines' });
+    gsap.set(titleSplit.lines, { yPercent: 110, opacity: 0 });
   } else if (titleEl) {
     gsap.set(titleEl, { yPercent: 110, opacity: 0 });
   }
@@ -1461,15 +1461,15 @@ window.Webflow.push(function initContactFlyout() {
       duration: 0.4,
       ease: 'power3.out',
     }, innerStart);
-    // data-contact="title" (split by letters)
+    // data-contact="title" (split by lines)
     if (titleEl) {
-      if (titleSplit?.chars) {
-        tl.to(titleSplit.chars, {
+      if (titleSplit?.lines) {
+        tl.to(titleSplit.lines, {
           yPercent: 0,
           opacity: 1,
           duration: 0.4,
           ease: 'power3.out',
-          stagger: 0.005,
+          stagger: 0.05,
         }, innerStart);
       } else {
         tl.to(titleEl, {
@@ -1514,15 +1514,15 @@ window.Webflow.push(function initContactFlyout() {
       duration: 0.2,
       ease: 'power3.in',
     }, 0);
-    // data-contact="title" (split by letters)
+    // data-contact="title" (split by lines)
     if (titleEl) {
-      if (titleSplit?.chars) {
-        tl.to(titleSplit.chars, {
+      if (titleSplit?.lines) {
+        tl.to(titleSplit.lines, {
           yPercent: 110,
           opacity: 0,
           duration: 0.2,
           ease: 'power3.in',
-          stagger: 0.005,
+          stagger: 0.05,
         }, 0);
       } else {
         tl.to(titleEl, {
