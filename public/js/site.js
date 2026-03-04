@@ -1369,6 +1369,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
+
+
 // Contact Flyout — GSAP-driven panel. Open: [data-contact="open"]. Close: [data-contact="close"] or click [data-contact="overlay"] or Escape.
 // Structure: .contact-flyout_wrap (data-contact="wrapper") — flex layout, do not change. .contact-flyout_overlay (data-contact="overlay"). .contact-flyout_panel (data-contact="panel") slides 110% → 0% xPercent. Inside panel: [data-contact="header"], [data-contact="title"] (SplitText lines), [data-contact="links"], [data-contact="form"]
 window.Webflow ||= [];
@@ -1413,12 +1416,9 @@ window.Webflow.push(function initContactFlyout() {
   // Links: from yPercent 150, opacity 0
   if (linksEl) gsap.set(linksEl, { yPercent: 150, opacity: 0 });
   // Form: all children from yPercent 150, opacity 0
-  if (formEl) {
-    const formChildren = formEl.children;
-    gsap.set(formChildren, { yPercent: 150, opacity: 0 });
-  }
+  if (formEl) gsap.set(formEl.children, { yPercent: 150, opacity: 0 });
 
-  // Single timeline: play forward to open, reverse to close (same animation, faster on close)
+  // Open timeline
   const innerStart = 0.5;
   const flyoutTl = gsap.timeline({ paused: true });
   // data-contact="overlay"
@@ -1477,9 +1477,6 @@ window.Webflow.push(function initContactFlyout() {
     }, innerStart + 0.3);
   }
 
-  // On open complete: nothing extra. On close we use a separate timeline (see close()) so we don't rely on reverse.
-  flyoutTl.eventCallback('onReverseComplete', null); // remove reverse callback; close timeline handles cleanup
-
   function open() {
     if (state.isOpen) return;
     state.isOpen = true;
@@ -1498,9 +1495,10 @@ window.Webflow.push(function initContactFlyout() {
   function close() {
     if (!state.isOpen) return;
     state.isOpen = false;
-    flyoutTl.pause(); // stop open timeline if still playing
+    flyoutTl.pause();
 
-    // Explicit close timeline (mirror of open, faster) — more reliable than playing open timeline in reverse
+    const closeDuration = 0.35;
+    const closeEase = 'power3.in';
     const closeTl = gsap.timeline({
       onComplete: () => {
         gsap.set(wrap, { pointerEvents: 'none', opacity: 0 });
@@ -1509,22 +1507,62 @@ window.Webflow.push(function initContactFlyout() {
         if (window.lenis) window.lenis.start();
       },
     });
-    const closeDuration = 0.35;
-    const closeEase = 'power3.in';
-    if (headerEl) closeTl.to(headerEl, { yPercent: 150, opacity: 0, duration: closeDuration * 0.6, ease: closeEase }, 0);
+
+    // data-contact="header"
+    if (headerEl) closeTl.to(headerEl, {
+      yPercent: 150,
+      opacity: 0,
+      duration: closeDuration * 0.6,
+      ease: closeEase,
+    }, 0);
+    // data-contact="title" (split by lines)
     if (titleEl) {
       if (titleSplit?.lines) {
-        closeTl.to(titleSplit.lines, { yPercent: 110, opacity: 0, duration: closeDuration * 0.6, ease: closeEase, stagger: 0.02 }, 0);
+        closeTl.to(titleSplit.lines, {
+          yPercent: 110,
+          opacity: 0,
+          duration: closeDuration * 0.6,
+          ease: closeEase,
+          stagger: 0.02,
+        }, 0);
       } else {
-        closeTl.to(titleEl, { yPercent: 110, opacity: 0, duration: closeDuration * 0.6, ease: closeEase }, 0);
+        closeTl.to(titleEl, {
+          yPercent: 110,
+          opacity: 0,
+          duration: closeDuration * 0.6,
+          ease: closeEase,
+        }, 0);
       }
     }
-    if (linksEl) closeTl.to(linksEl, { yPercent: 150, opacity: 0, duration: closeDuration * 0.6, ease: closeEase }, 0);
+    // data-contact="links"
+    if (linksEl) closeTl.to(linksEl, {
+      yPercent: 150,
+      opacity: 0,
+      duration: closeDuration * 0.6,
+      ease: closeEase,
+    }, 0);
+    // data-contact="form" (children)
     if (formEl && formEl.children.length) {
-      closeTl.to(formEl.children, { yPercent: 150, opacity: 0, duration: closeDuration * 0.6, ease: closeEase, stagger: 0.015 }, 0);
+      closeTl.to(formEl.children, {
+        yPercent: 150,
+        opacity: 0,
+        duration: closeDuration * 0.6,
+        ease: closeEase,
+        stagger: 0.015,
+      }, 0);
     }
-    closeTl.to(panel, { xPercent: 110, duration: closeDuration * 1.2, ease: closeEase }, closeDuration * 0.1);
-    if (overlay) closeTl.to(overlay, { opacity: 0, duration: closeDuration * 0.8, ease: closeEase }, closeDuration * 0.1);
+    // data-contact="panel" (.contact-flyout_panel) 0% → 110%
+    closeTl.to(panel, {
+      xPercent: 110,
+      duration: closeDuration * 1.2,
+      ease: closeEase,
+    }, closeDuration * 0.1);
+    // data-contact="overlay"
+    if (overlay) closeTl.to(overlay, {
+      opacity: 0,
+      duration: closeDuration * 0.8,
+      ease: closeEase,
+    }, closeDuration * 0.1);
   }
 
   openTriggers.forEach((el) => {
@@ -1541,7 +1579,7 @@ window.Webflow.push(function initContactFlyout() {
     });
   });
 
-  // Close when clicking the overlay (outside the panel)
+  // Close: overlay click, or click outside panel
   if (overlay) {
     overlay.addEventListener('click', close);
   } else {
