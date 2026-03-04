@@ -1388,8 +1388,6 @@ window.Webflow.push(function initContactFlyout() {
   const formEl = panel?.querySelector('[data-contact="form"]');
 
   const state = { isOpen: false };
-  let openTween = null;
-  let closeTween = null;
   let titleSplit = null; // SplitText instance for cleanup
 
   // Initial state: wrap pointer-events only (do not touch flex/layout), overlay 0%, panel at 110% xPercent, inner elements at "from" values
@@ -1420,160 +1418,95 @@ window.Webflow.push(function initContactFlyout() {
     gsap.set(formChildren, { yPercent: 150, opacity: 0 });
   }
 
-  function open() {
-    if (state.isOpen) return;
-    state.isOpen = true;
-    if (closeTween) closeTween.kill();
-    if (window.lenis) window.lenis.stop();
-    wrap.setAttribute('aria-hidden', 'false');
-
-    const tl = gsap.timeline({ overwrite: true });
-    // .contact-flyout_wrap (show wrap + pointer-events on)
-    tl.set(wrap, {
-      visibility: 'visible',
-      opacity: 1,
-      pointerEvents: 'auto',
-    });
-    // data-contact="overlay"
-    if (overlay) {
-      tl.set(overlay, { pointerEvents: 'auto' }, 0);
-      tl.to(overlay, {
-        opacity: 0.4,
-        duration: 0.7,
-        ease: 'power4.inOut',
-      }, 0);
-    }
-    // data-contact="panel" (.contact-flyout_panel) 110% → 0%
-    tl.to(panel, {
-      xPercent: 0,
-      duration: 0.8,
-      ease: 'power4.inOut',
-    }, 0.2);
-
-    // Stagger inner animations after panel starts moving (e.g. 0.15s in)
-    const innerStart = 0.3;
-    // data-contact="header"
-    if (headerEl) tl.to(headerEl, {
-      yPercent: 0,
-      opacity: 1,
-      duration: 0.6,
-      ease: 'power4.out',
-    }, innerStart);
-    // data-contact="title" (split by lines)
-    if (titleEl) {
-      if (titleSplit?.lines) {
-        tl.to(titleSplit.lines, {
-          yPercent: 0,
-          opacity: 1,
-          duration: 0.5,
-          ease: 'power4.out',
-          stagger: 0.05,
-        }, innerStart);
-      } else {
-        tl.to(titleEl, {
-          yPercent: 0,
-          opacity: 1,
-          duration: 0.5,
-          ease: 'power4.out',
-        }, innerStart);
-      }
-    }
-    // data-contact="links"
-    if (linksEl) tl.to(linksEl, {
-      yPercent: 0,
-      opacity: 1,
-      duration: 0.5,
-      ease: 'power4.out',
-    }, innerStart + 0.05);
-    // data-contact="form" (children)
-    if (formEl && formEl.children.length) {
-      tl.to(formEl.children, {
+  // Single timeline: play forward to open, reverse to close (same animation, faster on close)
+  const innerStart = 0.5;
+  const flyoutTl = gsap.timeline({ paused: true });
+  // data-contact="overlay"
+  if (overlay) flyoutTl.to(overlay, {
+    opacity: 0.4,
+    duration: 0.7,
+    ease: 'power4.inOut',
+  }, 0);
+  // data-contact="panel" (.contact-flyout_panel) 110% → 0%
+  flyoutTl.to(panel, {
+    xPercent: 0,
+    duration: 0.8,
+    ease: 'power4.inOut',
+  }, 0.2);
+  // data-contact="header"
+  if (headerEl) flyoutTl.to(headerEl, {
+    yPercent: 0,
+    opacity: 1,
+    duration: 0.6,
+    ease: 'power4.out',
+  }, innerStart);
+  // data-contact="title" (split by lines)
+  if (titleEl) {
+    if (titleSplit?.lines) {
+      flyoutTl.to(titleSplit.lines, {
         yPercent: 0,
         opacity: 1,
         duration: 0.5,
         ease: 'power4.out',
-        stagger: 0.03,
+        stagger: 0.05,
       }, innerStart + 0.1);
+    } else {
+      flyoutTl.to(titleEl, {
+        yPercent: 0,
+        opacity: 1,
+        duration: 0.5,
+        ease: 'power4.out',
+      }, innerStart);
     }
+  }
+  // data-contact="links"
+  if (linksEl) flyoutTl.to(linksEl, {
+    yPercent: 0,
+    opacity: 1,
+    duration: 0.5,
+    ease: 'power4.out',
+  }, innerStart + 0.2);
+  // data-contact="form" (children)
+  if (formEl && formEl.children.length) {
+    flyoutTl.to(formEl.children, {
+      yPercent: 0,
+      opacity: 1,
+      duration: 0.5,
+      ease: 'power4.out',
+      stagger: 0.03,
+    }, innerStart + 0.3);
+  }
 
-    openTween = tl;
+  // On close (reverse) finish: hide wrap, release overlay pointer-events, Lenis start
+  flyoutTl.eventCallback('onReverseComplete', () => {
+    gsap.set(wrap, { pointerEvents: 'none', opacity: 0 });
+    if (overlay) gsap.set(overlay, { pointerEvents: 'none' });
+    wrap.setAttribute('aria-hidden', 'true');
+    if (window.lenis) window.lenis.start();
+  });
+
+  function open() {
+    if (state.isOpen) return;
+    state.isOpen = true;
+    if (window.lenis) window.lenis.stop();
+    wrap.setAttribute('aria-hidden', 'false');
+
+    gsap.set(wrap, { visibility: 'visible', opacity: 1, pointerEvents: 'auto' });
+    if (overlay) gsap.set(overlay, { pointerEvents: 'auto' });
+
+    flyoutTl.reversed(false);
+    flyoutTl.timeScale(1);
+    flyoutTl.progress(0);
+    flyoutTl.play();
   }
 
   function close() {
     if (!state.isOpen) return;
     state.isOpen = false;
-    if (openTween) openTween.kill();
 
-    const tl = gsap.timeline({ overwrite: true });
-    // data-contact="header"
-    if (headerEl) tl.to(headerEl, {
-      yPercent: 150,
-      opacity: 0,
-      duration: 0.2,
-      ease: 'power3.in',
-    }, 0);
-    // data-contact="title" (split by lines)
-    if (titleEl) {
-      if (titleSplit?.lines) {
-        tl.to(titleSplit.lines, {
-          yPercent: 110,
-          opacity: 0,
-          duration: 0.2,
-          ease: 'power3.in',
-          stagger: 0.05,
-        }, 0);
-      } else {
-        tl.to(titleEl, {
-          yPercent: 110,
-          opacity: 0,
-          duration: 0.2,
-          ease: 'power3.in',
-        }, 0);
-      }
-    }
-    // data-contact="links"
-    if (linksEl) tl.to(linksEl, {
-      yPercent: 150,
-      opacity: 0,
-      duration: 0.2,
-      ease: 'power3.in',
-    }, 0);
-    // data-contact="form" (children)
-    if (formEl && formEl.children.length) {
-      tl.to(formEl.children, {
-        yPercent: 150,
-        opacity: 0,
-        duration: 0.2,
-        ease: 'power3.in',
-        stagger: 0.02,
-      }, 0);
-    }
-    // data-contact="panel" (.contact-flyout_panel) 0% → 110%
-    tl.to(panel, {
-      xPercent: 110,
-      duration: 0.3,
-      ease: 'power3.in',
-    }, 0.05);
-    // data-contact="overlay"
-    if (overlay) {
-      tl.to(overlay, {
-        opacity: 0,
-        duration: 0.25,
-        ease: 'power2.in',
-      }, 0.05);
-      tl.set(overlay, { pointerEvents: 'none' }, 0.3);
-    }
-    // .contact-flyout_wrap (pointer-events off + hide wrap)
-    tl.set(wrap, {
-      pointerEvents: 'none',
-      opacity: 0,
-    }, 0.3);
-    tl.call(() => {
-      wrap.setAttribute('aria-hidden', 'true');
-      if (window.lenis) window.lenis.start();
-    }, null, 0.3);
-
-    closeTween = tl;
+    flyoutTl.reversed(true);
+    flyoutTl.timeScale(1.5); // close ~50% faster
+    flyoutTl.play();
   }
 
   openTriggers.forEach((el) => {
