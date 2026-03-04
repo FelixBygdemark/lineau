@@ -1367,3 +1367,146 @@ function initBasicFormValidation() {
 document.addEventListener('DOMContentLoaded', () => {
   initBasicFormValidation();
 });
+
+
+// Contact Flyout — GSAP-driven panel. Open: [data-contact="open"]. Close: [data-contact="close"] or click [data-contact="overlay"] or Escape.
+// Structure: .contact-flyout_wrap > [data-contact="overlay"] + [data-contact="panel"]. Inside panel: [data-contact="header"], [data-contact="title"], [data-contact="links"], [data-contact="form"]
+window.Webflow ||= [];
+window.Webflow.push(function initContactFlyout() {
+  const wrap = document.querySelector('.contact-flyout_wrap');
+  if (!wrap) return;
+
+  const overlay = wrap.querySelector('[data-contact="overlay"]');
+  const panel = wrap.querySelector('[data-contact="panel"]') || wrap.querySelector('.contact-flyout') || wrap.firstElementChild;
+  const openTriggers = document.querySelectorAll('[data-contact="open"]');
+  const closeTriggers = wrap.querySelectorAll('[data-contact="close"]');
+
+  // Panel inner elements (optional)
+  const headerEl = panel?.querySelector('[data-contact="header"]');
+  const titleEl = panel?.querySelector('[data-contact="title"]');
+  const linksEl = panel?.querySelector('[data-contact="links"]');
+  const formEl = panel?.querySelector('[data-contact="form"]');
+
+  const state = { isOpen: false };
+  let openTween = null;
+  let closeTween = null;
+  let titleSplit = null; // SplitText instance for cleanup
+
+  // Initial state: wrap hidden, overlay 0%, panel off-screen, inner elements at "from" values
+  gsap.set(wrap, { visibility: 'visible', display: 'grid', opacity: 1 });
+  gsap.set(wrap, { pointerEvents: 'none' });
+  if (overlay) gsap.set(overlay, { opacity: 0 });
+  gsap.set(panel, { xPercent: 100 });
+
+  // Header: from yPercent 150, opacity 0
+  if (headerEl) gsap.set(headerEl, { yPercent: 150, opacity: 0 });
+  // Title: split by letters, overflow hidden, from yPercent 110, opacity 0
+  if (titleEl && typeof SplitText !== 'undefined') {
+    titleEl.style.overflow = 'hidden';
+    titleSplit = new SplitText(titleEl, { type: 'chars' });
+    gsap.set(titleSplit.chars, { yPercent: 110, opacity: 0 });
+  } else if (titleEl) {
+    gsap.set(titleEl, { yPercent: 110, opacity: 0 });
+  }
+  // Links: from yPercent 150, opacity 0
+  if (linksEl) gsap.set(linksEl, { yPercent: 150, opacity: 0 });
+  // Form: all children from yPercent 150, opacity 0
+  if (formEl) {
+    const formChildren = formEl.children;
+    gsap.set(formChildren, { yPercent: 150, opacity: 0 });
+  }
+
+  function open() {
+    if (state.isOpen) return;
+    state.isOpen = true;
+    if (closeTween) closeTween.kill();
+    if (window.lenis) window.lenis.stop();
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    wrap.setAttribute('aria-hidden', 'false');
+
+    const tl = gsap.timeline({ overwrite: true });
+    tl.set(wrap, { pointerEvents: 'auto' });
+    if (overlay) tl.to(overlay, { opacity: 0.4, duration: 0.25, ease: 'power2.out' }, 0);
+    tl.to(panel, { xPercent: 0, duration: 0.4, ease: 'power3.out' }, 0);
+
+    // Stagger inner animations after panel starts moving (e.g. 0.15s in)
+    const innerStart = 0.15;
+    if (headerEl) tl.to(headerEl, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, innerStart);
+    if (titleEl) {
+      if (titleSplit?.chars) {
+        tl.to(titleSplit.chars, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out', stagger: 0.005 }, innerStart);
+      } else {
+        tl.to(titleEl, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, innerStart);
+      }
+    }
+    if (linksEl) tl.to(linksEl, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, innerStart + 0.05);
+    if (formEl && formEl.children.length) {
+      tl.to(formEl.children, { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power3.out', stagger: 0.03 }, innerStart + 0.1);
+    }
+
+    openTween = tl;
+  }
+
+  function close() {
+    if (!state.isOpen) return;
+    state.isOpen = false;
+    if (openTween) openTween.kill();
+
+    const tl = gsap.timeline({ overwrite: true });
+    // Reset inner elements
+    if (headerEl) tl.to(headerEl, { yPercent: 150, opacity: 0, duration: 0.2, ease: 'power3.in' }, 0);
+    if (titleEl) {
+      if (titleSplit?.chars) {
+        tl.to(titleSplit.chars, { yPercent: 110, opacity: 0, duration: 0.2, ease: 'power3.in', stagger: 0.005 }, 0);
+      } else {
+        tl.to(titleEl, { yPercent: 110, opacity: 0, duration: 0.2, ease: 'power3.in' }, 0);
+      }
+    }
+    if (linksEl) tl.to(linksEl, { yPercent: 150, opacity: 0, duration: 0.2, ease: 'power3.in' }, 0);
+    if (formEl && formEl.children.length) {
+      tl.to(formEl.children, { yPercent: 150, opacity: 0, duration: 0.2, ease: 'power3.in', stagger: 0.02 }, 0);
+    }
+    tl.to(panel, { xPercent: 100, duration: 0.3, ease: 'power3.in' }, 0.05);
+    if (overlay) tl.to(overlay, { opacity: 0, duration: 0.25, ease: 'power2.in' }, 0.05);
+    tl.set(wrap, { pointerEvents: 'none' }, 0.3);
+    tl.call(() => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+      wrap.setAttribute('aria-hidden', 'true');
+      if (window.lenis) window.lenis.start();
+    }, null, 0.3);
+
+    closeTween = tl;
+  }
+
+  openTriggers.forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      open();
+    });
+  });
+
+  closeTriggers.forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      close();
+    });
+  });
+
+  // Close when clicking the overlay (outside the panel)
+  if (overlay) {
+    overlay.addEventListener('click', close);
+  } else {
+    wrap.addEventListener('click', (e) => {
+      if (!panel.contains(e.target)) close();
+    });
+  }
+  panel.addEventListener('click', (e) => e.stopPropagation());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.isOpen) close();
+  });
+
+  wrap.setAttribute('aria-hidden', 'true');
+});
