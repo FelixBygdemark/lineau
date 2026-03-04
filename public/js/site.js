@@ -1399,7 +1399,7 @@ window.Webflow.push(function initContactFlyout() {
     opacity: 0,
     pointerEvents: 'none',
   });
-  if (overlay) gsap.set(overlay, { opacity: 0 });
+  if (overlay) gsap.set(overlay, { opacity: 0, pointerEvents: 'none' });
   gsap.set(panel, { xPercent: 110 });
 
   // Header: from yPercent 150, opacity 0
@@ -1437,11 +1437,14 @@ window.Webflow.push(function initContactFlyout() {
       pointerEvents: 'auto',
     });
     // data-contact="overlay"
-    if (overlay) tl.to(overlay, {
-      opacity: 0.4,
-      duration: 0.25,
-      ease: 'power2.out',
-    }, 0);
+    if (overlay) {
+      tl.set(overlay, { pointerEvents: 'auto' }, 0);
+      tl.to(overlay, {
+        opacity: 0.4,
+        duration: 0.25,
+        ease: 'power2.out',
+      }, 0);
+    }
     // data-contact="panel" (.contact-flyout_panel) 110% → 0%
     tl.to(panel, {
       xPercent: 0,
@@ -1554,11 +1557,14 @@ window.Webflow.push(function initContactFlyout() {
       ease: 'power3.in',
     }, 0.05);
     // data-contact="overlay"
-    if (overlay) tl.to(overlay, {
-      opacity: 0,
-      duration: 0.25,
-      ease: 'power2.in',
-    }, 0.05);
+    if (overlay) {
+      tl.to(overlay, {
+        opacity: 0,
+        duration: 0.25,
+        ease: 'power2.in',
+      }, 0.05);
+      tl.set(overlay, { pointerEvents: 'none' }, 0.3);
+    }
     // .contact-flyout_wrap (pointer-events off + hide wrap)
     tl.set(wrap, {
       pointerEvents: 'none',
