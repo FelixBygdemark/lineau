@@ -1634,7 +1634,7 @@ function initSideNavWipeEffect(){
     .fromTo(menuButtonIcon,{rotate:0},{rotate:315},"<")
     .fromTo(overlay,{autoAlpha:0},{autoAlpha:1},"<")
     .fromTo(bgPanels,{xPercent:101},{xPercent:0,stagger:0.12,duration: 0.575},"<")
-    .fromTo(menuLinks,{yPercent:140,rotate:10},{yPercent:0, rotate:0,stagger:0.05},"<+=0.35")
+    .fromTo(menuLinks,{yPercent:150,rotate:10},{yPercent:0, rotate:0,stagger:0.05},"<+=0.35")
     .fromTo(fadeTargets,{autoAlpha:0,yPercent:50},{autoAlpha:1, yPercent:0,stagger:0.04},"<+=0.2");
   }
   
@@ -1669,7 +1669,7 @@ function initSideNavWipeEffect(){
   });
 }
 
-// Initialize Draggable Infinite GSAP Slider
+
 document.addEventListener("DOMContentLoaded", () => {
   initSideNavWipeEffect();
 });
