@@ -982,7 +982,7 @@ function initNavCharStagger() {
         duration: 0.3,
         ease: 'power4.inOut',
         stagger: {
-          each: 0.005
+          each: 0.015
         },
         onComplete: () => {
           leaveTween = null;
@@ -1002,7 +1002,7 @@ function initNavCharStagger() {
         duration: 0.3,
         ease: 'power4.inOut',
         stagger: {
-          each: 0.005
+          each: 0.015
         },
         onComplete: () => {
           enterTween = null;
