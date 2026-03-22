@@ -412,7 +412,7 @@ document.querySelectorAll("[stagger-link]").forEach(link => {
 
   link.addEventListener("mouseenter", () => {
     gsap.to(split.chars, {
-      yPercent: -100,
+      yPercent: -110,
       duration: 0.3,
       ease: "power4.inOut",
       stagger: 0.03,
