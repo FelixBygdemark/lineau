@@ -980,9 +980,9 @@ function initNavCharStagger() {
       leaveTween = gsap.to(split.chars, {
         yPercent: 0,
         duration: 0.3,
-        ease: 'power4.inOut',
+        ease: 'power4.out',
         stagger: {
-          each: 0.015
+          each: 0.01
         },
         onComplete: () => {
           leaveTween = null;
@@ -1000,9 +1000,9 @@ function initNavCharStagger() {
       enterTween = gsap.to(split.chars, {
         yPercent: -100,
         duration: 0.3,
-        ease: 'power4.inOut',
+        ease: 'power4.out',
         stagger: {
-          each: 0.015
+          each: 0.01
         },
         onComplete: () => {
           enterTween = null;
