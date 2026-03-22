@@ -412,7 +412,7 @@ document.querySelectorAll("[stagger-link]").forEach(link => {
 
   link.addEventListener("mouseenter", () => {
     gsap.to(split.chars, {
-      yPercent: -110,
+      yPercent: -100,
       duration: 0.3,
       ease: "power4.inOut",
       stagger: 0.03,
@@ -942,25 +942,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-//nav text-link stagger
+//nav text-link stagger — hover on [data-nav-stagger] (often a parent); text split on [data-nav-stagger-target] or legacy same-element <a>
 function initNavCharStagger() {
-  const links = document.querySelectorAll('[data-nav-stagger]');
+  const triggers = document.querySelectorAll('[data-nav-stagger]');
 
-  links.forEach(link => {
-    if (link.dataset.splitInit) return;
-    link.dataset.splitInit = 'true';
+  triggers.forEach(trigger => {
+    if (trigger.dataset.splitInit) return;
 
-    const split = new SplitText(link, {
+    let target = trigger.querySelector('[data-nav-stagger-target]');
+    if (!target) {
+      if (trigger.matches('a')) {
+        target = trigger;
+      } else {
+        target = trigger.querySelector('a') || trigger.firstElementChild;
+      }
+    }
+    if (!target) return;
+
+    trigger.dataset.splitInit = 'true';
+
+    const split = new SplitText(target, {
       type: 'chars',
       charsClass: 'char'
     });
 
-    // Reset initial position
     gsap.set(split.chars, {
       yPercent: 0
     });
 
-    link.addEventListener('mouseenter', () => {
+    trigger.addEventListener('mouseenter', () => {
       gsap.to(split.chars, {
         yPercent: -100,
         duration: 0.6,
@@ -971,7 +981,7 @@ function initNavCharStagger() {
       });
     });
 
-    link.addEventListener('mouseleave', () => {
+    trigger.addEventListener('mouseleave', () => {
       gsap.to(split.chars, {
         yPercent: 0,
         duration: 0.4,

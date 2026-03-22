@@ -19,8 +19,9 @@
 
 
 
-/* Nav stagger */
-[data-nav-stagger] {
+/* Nav stagger — trigger can be a parent; clip/line metrics on the text node */
+[data-nav-stagger-target],
+[data-nav-stagger]:is(a) {
   line-height: 1;
   display: inline-block;
   overflow: hidden;
