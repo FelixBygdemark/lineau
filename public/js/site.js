@@ -970,26 +970,52 @@ function initNavCharStagger() {
       yPercent: 0
     });
 
-    trigger.addEventListener('mouseenter', () => {
-      gsap.to(split.chars, {
-        yPercent: -100,
-        duration: 0.6,
-        ease: 'power4.out',
+    let enterTween = null;
+    let leaveTween = null;
+    let leaveQueued = false;
+
+    const runLeave = () => {
+      leaveQueued = false;
+      if (leaveTween) leaveTween.kill();
+      leaveTween = gsap.to(split.chars, {
+        yPercent: 0,
+        duration: 0.3,
+        ease: 'power4.inOut',
         stagger: {
-          each: 0.01
+          each: 0.005
+        },
+        onComplete: () => {
+          leaveTween = null;
+        }
+      });
+    };
+
+    trigger.addEventListener('mouseenter', () => {
+      leaveQueued = false;
+      if (leaveTween) {
+        leaveTween.kill();
+        leaveTween = null;
+      }
+      if (enterTween) enterTween.kill();
+      enterTween = gsap.to(split.chars, {
+        yPercent: -100,
+        duration: 0.3,
+        ease: 'power4.inOut',
+        stagger: {
+          each: 0.005
+        },
+        onComplete: () => {
+          enterTween = null;
+          if (leaveQueued) runLeave();
         }
       });
     });
 
     trigger.addEventListener('mouseleave', () => {
-      gsap.to(split.chars, {
-        yPercent: 0,
-        duration: 0.4,
-        ease: 'power4.inOut',
-        stagger: {
-          each: 0.01
-        }
-      });
+      leaveQueued = true;
+      if (!enterTween) {
+        runLeave();
+      }
     });
   });
 }
