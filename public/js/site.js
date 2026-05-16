@@ -19,11 +19,6 @@ window.addEventListener('pageshow', function () {
   lenis.scrollTo(0, { immediate: true });
 });
 
-// Listen for the 'scroll' event and log the event data to the console
-lenis.on('scroll', (e) => {
-  console.log(e);
-});
-
 // Synchronize Lenis scrolling with GSAP's ScrollTrigger plugin
 lenis.on('scroll', ScrollTrigger.update);
 
@@ -1706,11 +1701,38 @@ function initSideNavWipeEffect(){
 }
 
 
+function initHomeCasesScroll() {
+  const track = document.querySelector('[data-home-track]');
+  const firstGroup = document.querySelector('[data-home-cases-group="first"]');
+  if (!track || !firstGroup) return;
+
+  const ease = 0.08;
+  const getScrollY = () => (window.lenis ? window.lenis.scroll : window.scrollY);
+
+  let currentY = getScrollY();
+  let groupHeight = firstGroup.offsetHeight;
+
+  const resizeObserver = new ResizeObserver(() => {
+    groupHeight = firstGroup.offsetHeight;
+  });
+  resizeObserver.observe(firstGroup);
+
+  const tick = () => {
+    const targetY = getScrollY();
+    currentY += (targetY - currentY) * ease;
+    if (groupHeight <= 0) return;
+
+    const wrappedY = gsap.utils.wrap(-groupHeight, 0, -currentY);
+    gsap.set(track, { y: wrappedY });
+  };
+
+  gsap.ticker.add(tick);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initSideNavWipeEffect();
+  initHomeCasesScroll();
 });
-
-
 
 
 // OSMO Page transition
