@@ -319,3 +319,23 @@ body:has([data-cursor]:hover) .cursor {
 [data-validate].is--success .form-field-icon.is--success {
   opacity: 1;
 }
+
+
+
+/* OSMO rotating image trail */
+[data-trail-item="hidden"] {
+  transform: translate(-50%, -50%) scale(0) rotate(-20deg);
+  position: absolute;
+}
+
+[data-trail-item="visible"] {
+  transform: translate(-50%, -50%) scale(1) rotate(0.001deg);
+  transition: transform 0.4s cubic-bezier(0.625, 0.05, 0, 1);
+  position: absolute;
+}
+
+[data-trail-item="transition-out"] {
+  transform: translate(-50%, -50%) scale(0) rotate(180deg);
+  transition: transform 0.8s cubic-bezier(0.625, 0, 0.875, 0);
+  position: absolute;
+}
