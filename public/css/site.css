@@ -285,17 +285,6 @@ body:has([data-cursor]:hover) .cursor {
 .ratio-2-3 { aspect-ratio: 2 / 3; }
 
 
-/* Home infinite cases scroll — sticky viewport inside .home_scroll_section runway */
-.home_scroll_viewport {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  width: 100%;
-  overflow: hidden;
-  z-index: 1;
-}
-
-
 /* OSMO Trailing cursor */
 [data-trail-item="hidden"] {
   transform: translate(-50%, -50%) scale(0) rotate(-20deg);

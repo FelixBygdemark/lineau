@@ -1700,97 +1700,10 @@ function initSideNavWipeEffect(){
   });
 }
 
-// Home infinite cases scroll — duplicate groups + sticky viewport + scroll reset
-function initHomeCasesScroll() {
-  const section = document.querySelector('.home_scroll_section');
-  const track = document.querySelector('[data-home-track]');
-  const firstGroup =
-    document.querySelector('[data-home-cases-group="first"]') ||
-    track?.querySelector('.home_cases_group');
-  if (!section || !track || !firstGroup) return;
-
-  let viewport = section.querySelector('.home_scroll_viewport');
-  if (!viewport) {
-    viewport = document.createElement('div');
-    viewport.className = 'home_scroll_viewport';
-    section.insertBefore(viewport, track);
-    viewport.appendChild(track);
-  }
-
-  const getScrollY = () => (window.lenis ? window.lenis.scroll : window.scrollY);
-
-  let loopHeight = 0;
-  let sectionTop = 0;
-  let runway = 1;
-  let multiplier = 1;
-  let isResetting = false;
-
-  function measure() {
-    const groups = track.querySelectorAll('.home_cases_group');
-    loopHeight =
-      groups.length >= 2
-        ? groups[1].offsetTop - groups[0].offsetTop
-        : firstGroup.offsetHeight;
-    sectionTop = section.getBoundingClientRect().top + getScrollY();
-    runway = Math.max(1, section.offsetHeight - window.innerHeight);
-    multiplier = loopHeight > 0 ? loopHeight / runway : 1;
-  }
-
-  measure();
-
-  const resizeObserver = new ResizeObserver(measure);
-  resizeObserver.observe(section);
-  resizeObserver.observe(track);
-
-  window.addEventListener('load', measure);
-  window.addEventListener('resize', measure);
-
-  const tick = () => {
-    if (loopHeight <= 0 || isResetting) return;
-
-    const scrollY = getScrollY();
-    const rect = section.getBoundingClientRect();
-
-    // Section not in play yet
-    if (rect.bottom <= 0) {
-      gsap.set(track, { y: 0 });
-      return;
-    }
-
-    const local = scrollY - sectionTop;
-    if (local < 0) {
-      gsap.set(track, { y: 0 });
-      return;
-    }
-
-    const visualTravel = local * multiplier;
-    const offset = ((visualTravel % loopHeight) + loopHeight) % loopHeight;
-    gsap.set(track, { y: -offset });
-
-    // Jump scroll back one loop when content repeats — invisible with duplicate groups
-    if (visualTravel >= loopHeight - 1) {
-      const wrappedVisual = visualTravel % loopHeight;
-      const newLocal = wrappedVisual / multiplier;
-      isResetting = true;
-      const targetScroll = sectionTop + newLocal;
-      if (window.lenis) {
-        window.lenis.scrollTo(targetScroll, { immediate: true });
-      } else {
-        window.scrollTo(0, targetScroll);
-      }
-      requestAnimationFrame(() => {
-        isResetting = false;
-      });
-    }
-  };
-
-  gsap.ticker.add(tick);
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   initSideNavWipeEffect();
-  initHomeCasesScroll();
 });
+
 
 
 // OSMO Page transition
