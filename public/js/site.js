@@ -1796,7 +1796,7 @@ function initCaseScrollTitles() {
   };
 
   const titleOut = {
-    yPercent: -500,
+    yPercent: -110,
     opacity: 0,
     stagger: { each: 0.015, from: "start" },
     ease: "none"
@@ -1811,7 +1811,7 @@ function initCaseScrollTitles() {
   titles.forEach((title) => {
     const split = new SplitText(title, { type: "chars" });
     title.splitChars = split.chars;
-    gsap.set(split.chars, { yPercent: 500, opacity: 0 });
+    gsap.set(split.chars, { yPercent: 110, opacity: 0 });
   });
 
   const firstSection = sections[0];
@@ -1861,7 +1861,7 @@ function initCaseScrollTitles() {
       scrollTrigger: {
         trigger: lastSection,
         start: "top 40%",
-        end: "top top",
+        end: "bottom top",
         scrub: true
       }
     }).to(lastTitle.splitChars, titleOut, 0);
