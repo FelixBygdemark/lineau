@@ -1783,7 +1783,7 @@ if (overlay && wrap && sections.length) {
 
 // HOME CASES TITLES ON SCROLL — adjust duration / ease on gsap.caseTitleScroll
 gsap.caseTitleScroll = {
-  duration: 0.3,
+  duration: 0.8,
   ease: "power4.inOut"
 };
 
@@ -1803,15 +1803,13 @@ function initCaseScrollTitles() {
   };
 
   const titleIn = {
-    yPercent: 0,
-    opacity: 1,
-    ...tweenBase
+    from: { yPercent: 110, opacity: 0 },
+    to: { yPercent: 0, opacity: 1, ...tweenBase }
   };
 
   const titleOut = {
-    yPercent: -110,
-    opacity: 0,
-    ...tweenBase
+    from: { yPercent: 0, opacity: 1 },
+    to: { yPercent: -110, opacity: 0, ...tweenBase }
   };
 
   function getTitleForSection(section) {
@@ -1820,10 +1818,10 @@ function initCaseScrollTitles() {
     );
   }
 
-  function animateTitle(title, vars) {
+  function animateTitle(title, { from, to }) {
     if (!title?.splitChars) return;
     gsap.killTweensOf(title.splitChars);
-    gsap.to(title.splitChars, vars);
+    gsap.fromTo(title.splitChars, from, to);
   }
 
   titles.forEach((title) => {
