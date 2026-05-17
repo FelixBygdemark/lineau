@@ -135,7 +135,7 @@
   
   [data-cursor-marquee-status="active"] .cursor-marquee__card {
     clip-path: inset(0 round 0.1em);
-    transform: translateY(50%) translateX(50%) rotate(0.001deg);
+    transform: translateY(100%) translateX(100%) rotate(0.001deg);
   }
   
   /* Show cursor dot when script loaded */
@@ -161,6 +161,7 @@
     transition: opacity 0.15s ease-in-out 0s;
     opacity: 1;
   }
+
 
   /* add once globally */
 [data-scroll-skew] {
