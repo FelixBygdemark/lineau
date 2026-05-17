@@ -1783,8 +1783,9 @@ if (overlay && wrap && sections.length) {
 
 // HOME CASES TITLES ON SCROLL — adjust duration / ease on gsap.caseTitleScroll
 gsap.caseTitleScroll = {
-  duration: 0.8,
-  ease: "power4.inOut"
+  duration: 0.6,
+  easeTitleIn: "power3.out",
+  easeTitleOut: "power3.in"
 };
 
 function initCaseScrollTitles() {
@@ -1793,23 +1794,22 @@ function initCaseScrollTitles() {
 
   if (!titles.length || !sections.length) return;
 
-  const { duration, ease } = gsap.caseTitleScroll;
+  const { duration, easeTitleIn, easeTitleOut } = gsap.caseTitleScroll;
 
   const tweenBase = {
     duration,
-    ease,
     stagger: { each: 0.015, from: "start" },
     overwrite: "auto"
   };
 
   const titleIn = {
     from: { yPercent: 110, opacity: 0 },
-    to: { yPercent: 0, opacity: 1, ...tweenBase }
+    to: { yPercent: 0, opacity: 1, ease: easeTitleIn, ...tweenBase }
   };
 
   const titleOut = {
     from: { yPercent: 0, opacity: 1 },
-    to: { yPercent: -110, opacity: 0, ...tweenBase }
+    to: { yPercent: -110, opacity: 0, ease: easeTitleOut, ...tweenBase }
   };
 
   function getTitleForSection(section) {
