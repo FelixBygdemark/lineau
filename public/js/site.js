@@ -1838,7 +1838,7 @@ function initCaseScrollTitles() {
 
     ScrollTrigger.create({
       trigger: section,
-      start: "top 50%",
+      start: "top 60%",
       onEnter: () => {
         if (prevTitle) animateTitle(prevTitle, titleOut);
         animateTitle(currentTitle, titleIn);
