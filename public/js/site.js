@@ -1805,7 +1805,7 @@ function initCaseScrollTitles() {
   const scrollRange = {
     start: "top bottom",
     end: "top 50%",
-    scrub: true
+    scrub: 1
   };
 
   titles.forEach((title) => {
