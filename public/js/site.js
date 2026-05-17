@@ -1791,21 +1791,21 @@ function initCaseScrollTitles() {
   const titleIn = {
     yPercent: 0,
     opacity: 1,
-    stagger: { each: 0.025, from: "start" },
+    stagger: { each: 0.015, from: "start" },
     ease: "none"
   };
 
   const titleOut = {
     yPercent: -110,
     opacity: 0,
-    stagger: { each: 0.025, from: "start" },
+    stagger: { each: 0.015, from: "start" },
     ease: "none"
   };
 
   const scrollRange = {
-    start: "top bottom",
-    end: "top 50%",
-    scrub: 1
+    start: "top 80",
+    end: "top 30%",
+    scrub: 0.7
   };
 
   titles.forEach((title) => {
@@ -1850,22 +1850,6 @@ function initCaseScrollTitles() {
     tl.to(currentTitle.splitChars, titleOut, 0);
     tl.to(nextTitle.splitChars, titleIn, 0);
   });
-
-  const lastSection = sections[sections.length - 1];
-  const lastTitle = document.querySelector(
-    `[data-title-item="${lastSection.dataset.caseTrigger}"] [data-title-inner]`
-  );
-
-  if (lastTitle) {
-    gsap.timeline({
-      scrollTrigger: {
-        trigger: lastSection,
-        start: "top bottom",
-        end: "bottom top",
-        scrub: true
-      }
-    }).to(lastTitle.splitChars, titleOut, 0);
-  }
 }
 
 document.addEventListener("DOMContentLoaded", initCaseScrollTitles);
