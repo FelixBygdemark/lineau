@@ -1783,9 +1783,9 @@ if (overlay && wrap && sections.length) {
 
 // HOME CASES TITLES ON SCROLL — adjust duration / ease on gsap.caseTitleScroll
 gsap.caseTitleScroll = {
-  duration: 0.3,
-  easeTitleIn: "power2.inOut",
-  easeTitleOut: "power2.inOut"
+  duration: 0.2,
+  easeTitleIn: "power3.inOut",
+  easeTitleOut: "power3.inOut"
 };
 
 function initCaseScrollTitles() {
