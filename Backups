@@ -1,0 +1,53 @@
+// HOME CASES TITLES ON SCROLL
+function initCaseScrollTitles() {
+  const titles = document.querySelectorAll("[data-title-inner]");
+  const sections = document.querySelectorAll("[data-case-trigger]");
+
+  if (!titles.length || !sections.length) return;
+
+  titles.forEach((title) => {
+    const split = new SplitText(title, { type: "chars" });
+    title.splitChars = split.chars;
+    gsap.set(split.chars, { yPercent: 500 });
+  });
+
+  if (titles[0]) {
+    gsap.set(titles[0].splitChars, { yPercent: 0 });
+  }
+
+  sections.forEach((section, index) => {
+    const currentTitle = document.querySelector(
+      `[data-title-item="${section.dataset.caseTrigger}"] [data-title-inner]`
+    );
+    const nextSection = sections[index + 1];
+    if (!nextSection) return;
+
+    const nextTitle = document.querySelector(
+      `[data-title-item="${nextSection.dataset.caseTrigger}"] [data-title-inner]`
+    );
+    if (!currentTitle || !nextTitle) return;
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: nextSection,
+        start: "top 80%",
+        end: "top 40%",
+        scrub: true
+      }
+    });
+
+    tl.to(currentTitle.splitChars, {
+      yPercent: -500,
+      stagger: { each: 0.015, from: "start" },
+      ease: "none"
+    }, 0);
+
+    tl.to(nextTitle.splitChars, {
+      yPercent: 0,
+      stagger: { each: 0.015, from: "start" },
+      ease: "none"
+    }, 0);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", initCaseScrollTitles);

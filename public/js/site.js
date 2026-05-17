@@ -1788,14 +1788,44 @@ function initCaseScrollTitles() {
 
   if (!titles.length || !sections.length) return;
 
+  const titleIn = {
+    yPercent: 0,
+    opacity: 1,
+    stagger: { each: 0.015, from: "start" },
+    ease: "none"
+  };
+
+  const titleOut = {
+    yPercent: -500,
+    opacity: 0,
+    stagger: { each: 0.015, from: "start" },
+    ease: "none"
+  };
+
+  const scrollRange = {
+    start: "top 80%",
+    end: "top 40%",
+    scrub: true
+  };
+
   titles.forEach((title) => {
     const split = new SplitText(title, { type: "chars" });
     title.splitChars = split.chars;
-    gsap.set(split.chars, { yPercent: 500 });
+    gsap.set(split.chars, { yPercent: 500, opacity: 0 });
   });
 
-  if (titles[0]) {
-    gsap.set(titles[0].splitChars, { yPercent: 0 });
+  const firstSection = sections[0];
+  const firstTitle = document.querySelector(
+    `[data-title-item="${firstSection.dataset.caseTrigger}"] [data-title-inner]`
+  );
+
+  if (firstTitle) {
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: firstSection,
+        ...scrollRange
+      }
+    }).to(firstTitle.splitChars, titleIn, 0);
   }
 
   sections.forEach((section, index) => {
@@ -1813,23 +1843,12 @@ function initCaseScrollTitles() {
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: nextSection,
-        start: "top 80%",
-        end: "top 40%",
-        scrub: true
+        ...scrollRange
       }
     });
 
-    tl.to(currentTitle.splitChars, {
-      yPercent: -500,
-      stagger: { each: 0.015, from: "start" },
-      ease: "none"
-    }, 0);
-
-    tl.to(nextTitle.splitChars, {
-      yPercent: 0,
-      stagger: { each: 0.015, from: "start" },
-      ease: "none"
-    }, 0);
+    tl.to(currentTitle.splitChars, titleOut, 0);
+    tl.to(nextTitle.splitChars, titleIn, 0);
   });
 }
 
