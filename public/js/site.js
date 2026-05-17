@@ -1791,20 +1791,20 @@ function initCaseScrollTitles() {
   const titleIn = {
     yPercent: 0,
     opacity: 1,
-    stagger: { each: 0.015, from: "start" },
+    stagger: { each: 0.025, from: "start" },
     ease: "none"
   };
 
   const titleOut = {
     yPercent: -110,
     opacity: 0,
-    stagger: { each: 0.015, from: "start" },
+    stagger: { each: 0.025, from: "start" },
     ease: "none"
   };
 
   const scrollRange = {
-    start: "top 80%",
-    end: "top 40%",
+    start: "top bottom",
+    end: "bottom top",
     scrub: true
   };
 
@@ -1860,7 +1860,7 @@ function initCaseScrollTitles() {
     gsap.timeline({
       scrollTrigger: {
         trigger: lastSection,
-        start: "top 40%",
+        start: "top bottom",
         end: "bottom top",
         scrub: true
       }
