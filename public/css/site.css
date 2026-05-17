@@ -146,8 +146,8 @@ body:has([data-cursor]:hover) .cursor {
 /* New Osmo custom cursor */
 .cursor-marquee__card {
     transition: all 0.4s cubic-bezier(.75, 0, .25, 1);
-    transform: translateY(0%) rotate(0.001deg);
-    clip-path: inset(calc(50% - 0.25em) round 50em);
+    transform: translateY(20%) translateX(50%) rotate(0.001deg);
+    clip-path: inset(calc(50% - 0.25em) round 0.1em);
     will-change: clip-path;
     opacity: 0;
   }
