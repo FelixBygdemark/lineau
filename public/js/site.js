@@ -1803,8 +1803,8 @@ function initCaseScrollTitles() {
   };
 
   const scrollRange = {
-    start: "top 80",
-    end: "top 30%",
+    start: "top 90%",
+    end: "top 10%",
     scrub: 0.7
   };
 
