@@ -1854,4 +1854,32 @@ function initCaseScrollTitles() {
 
 document.addEventListener("DOMContentLoaded", initCaseScrollTitles);
 
+
+// HOME CASES TITLES FIT TO WIDTH
+function fitTitles() {
+
+  const titles = document.querySelectorAll("[data-title-inner]")
+
+  titles.forEach((title) => {
+
+    // RESET
+    gsap.set(title, {
+      fontSize: "15vw"
+    })
+
+    const targetWidth = window.innerWidth * 0.85
+    const actualWidth = title.offsetWidth
+
+    const scale = targetWidth / actualWidth
+
+    gsap.set(title, {
+      fontSize: `${15 * scale}vw`
+    })
+  })
+}
+
+fitTitles()
+
+window.addEventListener("resize", fitTitles)
+
 // OSMO Page transition
