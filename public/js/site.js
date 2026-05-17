@@ -1705,5 +1705,79 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+// Cases scroll section change BG color on scroll
+const overlay = document.querySelector("[data-overlay]")
+const wrap = document.querySelector("[data-overlay-wrap]")
+const sections = document.querySelectorAll("[data-overlay-color]")
+
+if (overlay && wrap && sections.length) {
+
+  // SHOW / HIDE OVERLAY
+  ScrollTrigger.create({
+    trigger: wrap,
+    start: "top top",
+    end: "bottom bottom",
+
+    onEnter: () => {
+      gsap.to(overlay, {
+        opacity: 1,
+        duration: 0.6,
+        ease: "power2.out"
+      })
+    },
+
+    onEnterBack: () => {
+      gsap.to(overlay, {
+        opacity: 1,
+        duration: 0.6,
+        ease: "power2.out"
+      })
+    },
+
+    onLeave: () => {
+      gsap.to(overlay, {
+        opacity: 0,
+        duration: 0.6,
+        ease: "power2.out"
+      })
+    },
+
+    onLeaveBack: () => {
+      gsap.to(overlay, {
+        opacity: 0,
+        duration: 0.6,
+        ease: "power2.out"
+      })
+    }
+  })
+
+  // CHANGE OVERLAY COLOR
+  sections.forEach((section) => {
+
+    ScrollTrigger.create({
+      trigger: section,
+      start: "top 60%",
+      end: "bottom 40%",
+
+      onEnter: () => {
+        gsap.to(overlay, {
+          backgroundColor: section.dataset.overlayColor,
+          duration: 0.8,
+          ease: "power2.out",
+          overwrite: "auto"
+        })
+      },
+
+      onEnterBack: () => {
+        gsap.to(overlay, {
+          backgroundColor: section.dataset.overlayColor,
+          duration: 0.8,
+          ease: "power2.out",
+          overwrite: "auto"
+        })
+      }
+    })
+  })
+}
 
 // OSMO Page transition
