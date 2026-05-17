@@ -1781,32 +1781,50 @@ if (overlay && wrap && sections.length) {
 }
 
 
-// HOME CASES TITLES ON SCROLL
+// HOME CASES TITLES ON SCROLL — adjust duration / ease on gsap.caseTitleScroll
+gsap.caseTitleScroll = {
+  duration: 0.5,
+  ease: "power4.inOut"
+};
+
 function initCaseScrollTitles() {
   const titles = document.querySelectorAll("[data-title-inner]");
   const sections = document.querySelectorAll("[data-case-trigger]");
 
   if (!titles.length || !sections.length) return;
 
+  const { duration, ease } = gsap.caseTitleScroll;
+
+  const tweenBase = {
+    duration,
+    ease,
+    stagger: { each: 0.015, from: "start" },
+    overwrite: "auto"
+  };
+
   const titleIn = {
     yPercent: 0,
     opacity: 1,
-    stagger: { each: 0.015, from: "start" },
-    ease: "none"
+    ...tweenBase
   };
 
   const titleOut = {
     yPercent: -110,
     opacity: 0,
-    stagger: { each: 0.015, from: "start" },
-    ease: "none"
+    ...tweenBase
   };
 
-  const scrollRange = {
-    start: "top 90%",
-    end: "top 10%",
-    scrub: 0.7
-  };
+  function getTitleForSection(section) {
+    return document.querySelector(
+      `[data-title-item="${section.dataset.caseTrigger}"] [data-title-inner]`
+    );
+  }
+
+  function animateTitle(title, vars) {
+    if (!title?.splitChars) return;
+    gsap.killTweensOf(title.splitChars);
+    gsap.to(title.splitChars, vars);
+  }
 
   titles.forEach((title) => {
     const split = new SplitText(title, { type: "chars" });
@@ -1814,41 +1832,24 @@ function initCaseScrollTitles() {
     gsap.set(split.chars, { yPercent: 110, opacity: 0 });
   });
 
-  const firstSection = sections[0];
-  const firstTitle = document.querySelector(
-    `[data-title-item="${firstSection.dataset.caseTrigger}"] [data-title-inner]`
-  );
-
-  if (firstTitle) {
-    gsap.timeline({
-      scrollTrigger: {
-        trigger: firstSection,
-        ...scrollRange
-      }
-    }).to(firstTitle.splitChars, titleIn, 0);
-  }
-
   sections.forEach((section, index) => {
-    const currentTitle = document.querySelector(
-      `[data-title-item="${section.dataset.caseTrigger}"] [data-title-inner]`
-    );
-    const nextSection = sections[index + 1];
-    if (!nextSection) return;
+    const currentTitle = getTitleForSection(section);
+    if (!currentTitle) return;
 
-    const nextTitle = document.querySelector(
-      `[data-title-item="${nextSection.dataset.caseTrigger}"] [data-title-inner]`
-    );
-    if (!currentTitle || !nextTitle) return;
+    const prevTitle = index > 0 ? getTitleForSection(sections[index - 1]) : null;
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: nextSection,
-        ...scrollRange
+    ScrollTrigger.create({
+      trigger: section,
+      start: "top 90%",
+      onEnter: () => {
+        if (prevTitle) animateTitle(prevTitle, titleOut);
+        animateTitle(currentTitle, titleIn);
+      },
+      onLeaveBack: () => {
+        animateTitle(currentTitle, titleOut);
+        if (prevTitle) animateTitle(prevTitle, titleIn);
       }
     });
-
-    tl.to(currentTitle.splitChars, titleOut, 0);
-    tl.to(nextTitle.splitChars, titleIn, 0);
   });
 }
 
