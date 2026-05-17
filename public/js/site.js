@@ -1850,6 +1850,22 @@ function initCaseScrollTitles() {
     tl.to(currentTitle.splitChars, titleOut, 0);
     tl.to(nextTitle.splitChars, titleIn, 0);
   });
+
+  const lastSection = sections[sections.length - 1];
+  const lastTitle = document.querySelector(
+    `[data-title-item="${lastSection.dataset.caseTrigger}"] [data-title-inner]`
+  );
+
+  if (lastTitle) {
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: lastSection,
+        start: "top 40%",
+        end: "top top",
+        scrub: true
+      }
+    }).to(lastTitle.splitChars, titleOut, 0);
+  }
 }
 
 document.addEventListener("DOMContentLoaded", initCaseScrollTitles);
