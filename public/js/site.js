@@ -1804,7 +1804,7 @@ function initCaseScrollTitles() {
 
   const scrollRange = {
     start: "top bottom",
-    end: "bottom top",
+    end: "top 50%",
     scrub: true
   };
 
