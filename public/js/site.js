@@ -1791,7 +1791,7 @@ function initCaseScrollTitles() {
   titles.forEach((title) => {
     const split = new SplitText(title, { type: "chars" });
     title.splitChars = split.chars;
-    gsap.set(split.chars, { yPercent: 110 });
+    gsap.set(split.chars, { yPercent: 500 });
   });
 
   if (titles[0]) {
@@ -1820,7 +1820,7 @@ function initCaseScrollTitles() {
     });
 
     tl.to(currentTitle.splitChars, {
-      yPercent: -110,
+      yPercent: -500,
       stagger: { each: 0.015, from: "start" },
       ease: "none"
     }, 0);
