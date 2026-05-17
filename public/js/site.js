@@ -1762,7 +1762,7 @@ if (overlay && wrap && sections.length) {
       onEnter: () => {
         gsap.to(overlay, {
           backgroundColor: section.dataset.overlayColor,
-          duration: 0.8,
+          duration: 0.4,
           ease: "power2.out",
           overwrite: "auto"
         })
@@ -1771,7 +1771,7 @@ if (overlay && wrap && sections.length) {
       onEnterBack: () => {
         gsap.to(overlay, {
           backgroundColor: section.dataset.overlayColor,
-          duration: 0.8,
+          duration: 0.4,
           ease: "power2.out",
           overwrite: "auto"
         })
@@ -1783,7 +1783,7 @@ if (overlay && wrap && sections.length) {
 
 // HOME CASES TITLES ON SCROLL — adjust duration / ease on gsap.caseTitleScroll
 gsap.caseTitleScroll = {
-  duration: 0.5,
+  duration: 0.3,
   ease: "power4.inOut"
 };
 
@@ -1840,7 +1840,7 @@ function initCaseScrollTitles() {
 
     ScrollTrigger.create({
       trigger: section,
-      start: "top 90%",
+      start: "top 50%",
       onEnter: () => {
         if (prevTitle) animateTitle(prevTitle, titleOut);
         animateTitle(currentTitle, titleIn);
