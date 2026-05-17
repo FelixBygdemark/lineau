@@ -12,12 +12,6 @@
 }
 
 
-/* OSMO Crisp Loader Animation */
-
-
-
-
-
 
 /* Nav stagger — trigger can be a parent; clip/line metrics on the text node */
 [data-nav-stagger-target],
@@ -34,6 +28,7 @@
   transform: translateY(0) rotate(0.001deg);
   will-change: transform;
 }
+
 
 /* OSMO Marquee */
 /* Container: clip content so only one viewport-width is visible; required for scroll effect */
@@ -56,25 +51,11 @@
 
 
 
-/* Custom Cursor */
-body:has([data-cursor]:hover) .cursor { 
-  opacity: 1; 
-}
-
 .button:hover .button-bg{
   transform: scale(0.95);
 }
 
-/* GPT reveal lines on scroll */
-.reveal-block .line {
-  display: block;
-  overflow: hidden; /* clip children */
-}
 
-.reveal-block .line > div {
-  transform: translateY(100%);
-  display: inline-block;
-}
 
 /* Ilja stagger text-links */
   a[stagger-link] [stagger-link-text]{
