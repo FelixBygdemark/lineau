@@ -151,11 +151,11 @@ function initGlobalParallax() {
             
             // Get the start position in %
             const startAttr = trigger.getAttribute("data-parallax-start")
-            const startVal = (startAttr != null && startAttr !== "") ? parseFloat(startAttr) : 20
+            const startVal = (startAttr != null && startAttr !== "") ? parseFloat(startAttr) : 10
 
             // Get the end position in %
             const endAttr = trigger.getAttribute("data-parallax-end")
-            const endVal = (endAttr != null && endAttr !== "") ? parseFloat(endAttr) : -20
+            const endVal = (endAttr != null && endAttr !== "") ? parseFloat(endAttr) : -10
             
             // Get the start value of the ScrollTrigger
             const scrollStartRaw = trigger.getAttribute("data-parallax-scroll-start") || "top bottom"
