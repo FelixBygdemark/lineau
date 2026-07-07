@@ -11,21 +11,25 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
 gsap.registerPlugin(ScrambleTextPlugin);
 gsap.registerPlugin(InertiaPlugin);
 
-// Initialize Lenis smooth scrolling
-const lenis = new Lenis();
+// Initialize Lenis smooth scrolling — skipped on pages with the infinite
+// slider (.slider): Lenis's own wheel/touch hijacking fights the slider's
+// own drag/wheel handling, and those pages have no vertical scroll to
+// smooth anyway. See docs/WEBFLOW-INFINITE-SLIDER-STRUCTURE.md.
+const hasInfiniteSlider = !!document.querySelector(".slider");
+const lenis = hasInfiniteSlider ? null : new Lenis();
 window.lenis = lenis; // Expose for Webflow page embed (home scroll lock)
 
 window.addEventListener('pageshow', function () {
-  lenis.scrollTo(0, { immediate: true });
+  lenis?.scrollTo(0, { immediate: true });
 });
 
 // Synchronize Lenis scrolling with GSAP's ScrollTrigger plugin
-lenis.on('scroll', ScrollTrigger.update);
+lenis?.on('scroll', ScrollTrigger.update);
 
 // Add Lenis's requestAnimationFrame (raf) method to GSAP's ticker
 // This ensures Lenis's smooth scroll animation updates on each GSAP tick
 gsap.ticker.add((time) => {
-  lenis.raf(time * 1000); // Convert time from seconds to milliseconds
+  lenis?.raf(time * 1000); // Convert time from seconds to milliseconds
 });
 
 // Disable lag smoothing in GSAP to prevent any delay in scroll animations
@@ -103,7 +107,7 @@ document.querySelectorAll('[data-scroll-skew]').forEach((el) => {
 
 // Refresh after images/fonts load (bounds change affect velocity timing)
 window.addEventListener('load', () => {
-  lenis.scrollTo(0, { immediate: true });
+  lenis?.scrollTo(0, { immediate: true });
   ScrollTrigger.refresh();
 });
 
