@@ -1929,9 +1929,10 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
   };
 
   // Measured from the DOM (not hardcoded) so this keeps working whatever
-  // width Webflow's breakpoints render the slide at.
-  function measureSlideWidth() {
-    const sample = originalSlides[0];
+  // width Webflow's breakpoints render the slide at. Must run AFTER the
+  // clones are in the track — a detached node (e.g. the original slides
+  // right after track.innerHTML = "") always reports a zero-width rect.
+  function measureSlideWidth(sample) {
     const rect = sample.getBoundingClientRect();
     const styles = getComputedStyle(sample);
     return (
@@ -1951,7 +1952,7 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
       });
     }
 
-    state.slideWidth = measureSlideWidth();
+    state.slideWidth = measureSlideWidth(state.slides[0]);
 
     const startOffset = -(slideCount * state.slideWidth * 2);
     state.currentX = startOffset;
