@@ -46,12 +46,18 @@ its image/title/href — no component system required for this.
 - **`.slide`** (**Link Block**, not a plain Div Block) — set a real `href` per slide to
   that project's page. This replaces the JS-driven `window.location.href` navigation
   from the original demo. Needs the **full** property set, not just sizing:
-  `width: 350px`, `height: 500px`, `margin: 0 20px`, `flex-shrink: 0`,
-  `position: relative`, `top: 50%`, `transform: translateY(-50%)` (the vertical-centering
-  trick for aligning slides within `.slide-track`), `overflow: visible`,
-  `display: flex`, `flex-direction: column`, `cursor: pointer`. The `display: flex;
-  flex-direction: column` here is what makes `.slide-image`'s `flex: 1` below actually
-  do anything — without it, `.slide-image` has no flex container to grow inside.
+  `height: 65svh` (responsive — tune to taste in the 65–70% range; `svh` rather than `%`
+  so it's self-contained and doesn't depend on `.slide-track`'s height rule staying
+  `100%`), `aspect-ratio: 350 / 500` (locks the card's proportions — **no separate
+  `width`**, it's computed automatically from height × ratio), `margin: 0 20px`,
+  `flex-shrink: 0`, `position: relative`, `top: 50%`, `transform: translateY(-50%)`
+  (the vertical-centering trick for aligning slides within `.slide-track`),
+  `overflow: visible`, `display: flex`, `flex-direction: column`, `cursor: pointer`. The
+  `display: flex; flex-direction: column` here is what makes `.slide-image`'s `flex: 1`
+  below actually do anything — without it, `.slide-image` has no flex container to grow
+  inside. No JS changes needed for this — `measureSlideWidth()` in `site.js` already
+  reads the slide's actual rendered width from the DOM rather than a hardcoded value,
+  and `buildLoop()` re-measures on every `resize`.
 - **`.slide-image`** — wraps the image. `width/height: 100%`, `overflow: hidden`,
   `flex: 1`.
 - **Image** inside `.slide-image` — class **`home-slider-image`**. Must be a real
@@ -68,8 +74,9 @@ its image/title/href — no component system required for this.
   via the Assets panel. Only add a combo class if a specific image needs its own style
   override (e.g. a different `object-position` focal point).
 - **`.slide-overlay`** — `position: absolute`, anchored to the bottom of the slide
-  (`bottom: -1.75rem; left: 0; right: 0`), holds only the title now. `opacity: 0` by
-  default, shown via the hover rule in §3.
+  (`bottom: -1.75rem; left: 0; right: 0`), holds only the title now. **Always visible**
+  (`opacity: 1`, overridden in `site.css` — see §3) — the title itself is hidden/revealed
+  per character via GSAP `SplitText` on hover in `site.js`, not container opacity.
 - **`.project-title`** (Text Block) — uppercase, `font-size: 0.8rem`, `font-weight: 500`.
   The arrow icon (`.project-arrow` in the original demo) is **intentionally dropped** —
   text-only overlay per current design direction.
@@ -78,19 +85,22 @@ its image/title/href — no component system required for this.
 
 ## 3. CSS to bring over
 
-Add to the site's custom CSS (or this section's embed) — these aren't things Webflow's
-visual panels express directly:
+Add to the site's custom CSS (or this section's embed) — this overrides Webflow's own
+`.slide-overlay { opacity: 0; }` default so the container is always visible:
 
 ```css
-.slide:hover .slide-overlay {
-  opacity: calc(1 - var(--slider-moving, 1));
+.slide-overlay {
+  opacity: 1;
 }
 ```
 
-This is what makes the title only fade in on hover **while the slider is not actively
-moving** — `--slider-moving` gets set to `0`/`1` on `documentElement` by the JS at
-runtime (see `updateMovingState()` in the original `script.js`), so this rule has no
-visible effect until that JS is wired up.
+The title reveal itself is **not** CSS-driven — `site.js` splits `.project-title` into
+characters with GSAP `SplitText` per slide, hides them (`opacity: 0; y: 20`), and
+animates them in/out on that slide's own `mouseenter`/`mouseleave`. This fires
+immediately regardless of whether the slider is moving or idle (no gating on slider
+state), and only runs on hover-capable devices (`matchMedia("(hover: hover)")`) — on
+touch, the title just stays visible via `.slide-overlay`'s `opacity: 1` above, since
+there's no hover to trigger the animation.
 
 Also check:
 - **`DM Mono` font** — the original demo loads it via a Google Fonts `@import`. Confirm
@@ -132,5 +142,5 @@ don't act on them while building the static structure:
 | Reusable, duplicable slide  | `.slide` Link Block → `.slide-image` (image) + `.slide-overlay` → `.project-title`. |
 | Add more slides later       | Duplicate a `.slide` block, swap image/title/href.                          |
 | Slide → project page link   | Native Webflow `href` on the `.slide` Link Block (no JS navigation needed). |
-| Hover title reveal          | `.slide:hover .slide-overlay` rule + `--slider-moving` custom property (JS sets it at runtime). |
-| Parallax / infinite loop    | Not yet wired — needs the adapted `script.js` per §4, added as custom code once the static structure above exists. |
+| Hover title reveal          | `.slide-overlay` always visible (CSS); GSAP `SplitText` animates `.project-title` chars in/out per-slide on `mouseenter`/`mouseleave` in `site.js`, independent of slider movement, hover-only. |
+| Parallax / infinite loop    | Wired in `public/js/site.js` (bottom, "HOME INFINITE SLIDER" block) — clones the 8 static slides into loop copies and drives drag/wheel physics + parallax. |

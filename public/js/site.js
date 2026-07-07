@@ -1920,13 +1920,46 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
     startX: 0,
     lastX: 0,
     lastMouseX: 0,
-    lastScrollTime: Date.now(),
-    isMoving: false,
-    velocity: 0,
-    lastCurrentX: 0,
     dragDistance: 0,
     hasActuallyDragged: false,
   };
+
+  // Title-reveal hover animation is hover-only — on touch devices the
+  // title just stays visible via .slide-overlay's base opacity: 1 in CSS.
+  const supportsHover = window.matchMedia("(hover: hover)").matches;
+
+  function setupTitleHover(slide) {
+    if (!supportsHover) return;
+
+    const title = slide.querySelector(".project-title");
+    if (!title) return;
+
+    const split = new SplitText(title, { type: "chars" });
+    gsap.set(split.chars, { y: 20, opacity: 0 });
+
+    let enterTween = null;
+    let leaveTween = null;
+
+    slide.addEventListener("mouseenter", () => {
+      leaveTween?.kill();
+      enterTween = gsap.fromTo(
+        split.chars,
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.4, ease: "power2.out", stagger: 0.03 }
+      );
+    });
+
+    slide.addEventListener("mouseleave", () => {
+      enterTween?.kill();
+      leaveTween = gsap.to(split.chars, {
+        y: 20,
+        opacity: 0,
+        duration: 0.2,
+        ease: "power4.out",
+        stagger: 0.015,
+      });
+    });
+  }
 
   // Measured from the DOM (not hardcoded) so this keeps working whatever
   // width Webflow's breakpoints render the slide at. Must run AFTER the
@@ -1949,6 +1982,7 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
         const clone = slide.cloneNode(true);
         track.appendChild(clone);
         state.slides.push(clone);
+        setupTitleHover(clone);
       });
     }
 
@@ -1993,25 +2027,9 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
     });
   }
 
-  function updateMovingState() {
-    state.velocity = Math.abs(state.currentX - state.lastCurrentX);
-    state.lastCurrentX = state.currentX;
-
-    const isSlowEnough = state.velocity < 0.1;
-    const hasBeenStillLongEnough = Date.now() - state.lastScrollTime > 200;
-    state.isMoving =
-      state.hasActuallyDragged || !isSlowEnough || !hasBeenStillLongEnough;
-
-    document.documentElement.style.setProperty(
-      "--slider-moving",
-      state.isMoving ? "1" : "0"
-    );
-  }
-
   function animate() {
     state.currentX += (state.targetX - state.currentX) * config.LERP_FACTOR;
 
-    updateMovingState();
     updateSlidePositions();
     updateParallax();
 
@@ -2022,7 +2040,6 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
 
     e.preventDefault();
-    state.lastScrollTime = Date.now();
 
     const scrollDelta = e.deltaY * config.SCROLL_SPEED;
     state.targetX -= Math.max(
@@ -2037,7 +2054,6 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
     state.lastX = state.targetX;
     state.dragDistance = 0;
     state.hasActuallyDragged = false;
-    state.lastScrollTime = Date.now();
   }
 
   function handleTouchMove(e) {
@@ -2048,7 +2064,6 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
     state.dragDistance = Math.abs(deltaX);
 
     if (state.dragDistance > 5) state.hasActuallyDragged = true;
-    state.lastScrollTime = Date.now();
   }
 
   function handleTouchEnd() {
@@ -2066,7 +2081,6 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
     state.lastX = state.targetX;
     state.dragDistance = 0;
     state.hasActuallyDragged = false;
-    state.lastScrollTime = Date.now();
   }
 
   function handleMouseMove(e) {
@@ -2079,7 +2093,6 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
     state.dragDistance += Math.abs(deltaX);
 
     if (state.dragDistance > 5) state.hasActuallyDragged = true;
-    state.lastScrollTime = Date.now();
   }
 
   function handleMouseUp() {
