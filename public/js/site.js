@@ -1878,7 +1878,243 @@ document.addEventListener("DOMContentLoaded", initCaseScrollTitles);
 // }
 // 
 // fitTitles()
-// 
+//
 // window.addEventListener("resize", fitTitles)
+
+
+// ================================================================
+// HOME INFINITE SLIDER — adapted from the Codegrid infinite horizontal
+// parallax slider demo. Slides are static Webflow markup (.slider >
+// .slide-track > a.slide Link Blocks) rather than JS-generated from a
+// data array — this only clones them into loop copies and drives the
+// drag/wheel physics + parallax. See docs/WEBFLOW-INFINITE-SLIDER-STRUCTURE.md.
+// ================================================================
+document.querySelectorAll(".slider").forEach((sliderEl) => {
+  const track = sliderEl.querySelector(".slide-track");
+  if (!track) return;
+
+  const originalSlides = Array.from(track.children).filter((el) =>
+    el.classList.contains("slide")
+  );
+  if (!originalSlides.length) return;
+
+  const slideCount = originalSlides.length;
+
+  const config = {
+    SCROLL_SPEED: 1.75,
+    LERP_FACTOR: 0.05,
+    MAX_VELOCITY: 150,
+    LOOP_COPIES: 6,
+  };
+
+  const state = {
+    currentX: 0,
+    targetX: 0,
+    slideWidth: 0,
+    slides: [],
+    isDragging: false,
+    startX: 0,
+    lastX: 0,
+    lastMouseX: 0,
+    lastScrollTime: Date.now(),
+    isMoving: false,
+    velocity: 0,
+    lastCurrentX: 0,
+    dragDistance: 0,
+    hasActuallyDragged: false,
+  };
+
+  // Measured from the DOM (not hardcoded) so this keeps working whatever
+  // width Webflow's breakpoints render the slide at.
+  function measureSlideWidth() {
+    const sample = originalSlides[0];
+    const rect = sample.getBoundingClientRect();
+    const styles = getComputedStyle(sample);
+    return (
+      rect.width + parseFloat(styles.marginLeft) + parseFloat(styles.marginRight)
+    );
+  }
+
+  function buildLoop() {
+    track.innerHTML = "";
+    state.slides = [];
+
+    for (let copy = 0; copy < config.LOOP_COPIES; copy++) {
+      originalSlides.forEach((slide) => {
+        const clone = slide.cloneNode(true);
+        track.appendChild(clone);
+        state.slides.push(clone);
+      });
+    }
+
+    state.slideWidth = measureSlideWidth();
+
+    const startOffset = -(slideCount * state.slideWidth * 2);
+    state.currentX = startOffset;
+    state.targetX = startOffset;
+  }
+
+  function updateSlidePositions() {
+    const sequenceWidth = state.slideWidth * slideCount;
+
+    if (state.currentX > -sequenceWidth * 1) {
+      state.currentX -= sequenceWidth;
+      state.targetX -= sequenceWidth;
+    } else if (state.currentX < -sequenceWidth * 4) {
+      state.currentX += sequenceWidth;
+      state.targetX += sequenceWidth;
+    }
+
+    track.style.transform = `translate3d(${state.currentX}px, 0, 0)`;
+  }
+
+  function updateParallax() {
+    const viewportCenter = window.innerWidth / 2;
+
+    state.slides.forEach((slide) => {
+      const img = slide.querySelector("img");
+      if (!img) return;
+
+      const slideRect = slide.getBoundingClientRect();
+      if (slideRect.right < -500 || slideRect.left > window.innerWidth + 500) {
+        return;
+      }
+
+      const slideCenter = slideRect.left + slideRect.width / 2;
+      const distanceFromCenter = slideCenter - viewportCenter;
+      const parallaxOffset = distanceFromCenter * -0.25;
+
+      img.style.transform = `translateX(${parallaxOffset}px) scale(2.25)`;
+    });
+  }
+
+  function updateMovingState() {
+    state.velocity = Math.abs(state.currentX - state.lastCurrentX);
+    state.lastCurrentX = state.currentX;
+
+    const isSlowEnough = state.velocity < 0.1;
+    const hasBeenStillLongEnough = Date.now() - state.lastScrollTime > 200;
+    state.isMoving =
+      state.hasActuallyDragged || !isSlowEnough || !hasBeenStillLongEnough;
+
+    document.documentElement.style.setProperty(
+      "--slider-moving",
+      state.isMoving ? "1" : "0"
+    );
+  }
+
+  function animate() {
+    state.currentX += (state.targetX - state.currentX) * config.LERP_FACTOR;
+
+    updateMovingState();
+    updateSlidePositions();
+    updateParallax();
+
+    requestAnimationFrame(animate);
+  }
+
+  function handleWheel(e) {
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+
+    e.preventDefault();
+    state.lastScrollTime = Date.now();
+
+    const scrollDelta = e.deltaY * config.SCROLL_SPEED;
+    state.targetX -= Math.max(
+      Math.min(scrollDelta, config.MAX_VELOCITY),
+      -config.MAX_VELOCITY
+    );
+  }
+
+  function handleTouchStart(e) {
+    state.isDragging = true;
+    state.startX = e.touches[0].clientX;
+    state.lastX = state.targetX;
+    state.dragDistance = 0;
+    state.hasActuallyDragged = false;
+    state.lastScrollTime = Date.now();
+  }
+
+  function handleTouchMove(e) {
+    if (!state.isDragging) return;
+
+    const deltaX = (e.touches[0].clientX - state.startX) * 1.5;
+    state.targetX = state.lastX + deltaX;
+    state.dragDistance = Math.abs(deltaX);
+
+    if (state.dragDistance > 5) state.hasActuallyDragged = true;
+    state.lastScrollTime = Date.now();
+  }
+
+  function handleTouchEnd() {
+    state.isDragging = false;
+    setTimeout(() => {
+      state.hasActuallyDragged = false;
+    }, 100);
+  }
+
+  function handleMouseDown(e) {
+    e.preventDefault();
+    state.isDragging = true;
+    state.startX = e.clientX;
+    state.lastMouseX = e.clientX;
+    state.lastX = state.targetX;
+    state.dragDistance = 0;
+    state.hasActuallyDragged = false;
+    state.lastScrollTime = Date.now();
+  }
+
+  function handleMouseMove(e) {
+    if (!state.isDragging) return;
+
+    e.preventDefault();
+    const deltaX = (e.clientX - state.lastMouseX) * 2;
+    state.targetX += deltaX;
+    state.lastMouseX = e.clientX;
+    state.dragDistance += Math.abs(deltaX);
+
+    if (state.dragDistance > 5) state.hasActuallyDragged = true;
+    state.lastScrollTime = Date.now();
+  }
+
+  function handleMouseUp() {
+    state.isDragging = false;
+    setTimeout(() => {
+      state.hasActuallyDragged = false;
+    }, 100);
+  }
+
+  // Slides are real <a href> Link Blocks now, so navigation is native —
+  // only block it when the interaction was actually a drag, not a tap/click.
+  function handleSlideClick(e) {
+    const slide = e.target.closest(".slide");
+    if (!slide) return;
+
+    if (state.hasActuallyDragged || state.dragDistance > 10) {
+      e.preventDefault();
+    }
+  }
+
+  function handleResize() {
+    buildLoop();
+  }
+
+  buildLoop();
+
+  sliderEl.addEventListener("wheel", handleWheel, { passive: false });
+  sliderEl.addEventListener("touchstart", handleTouchStart);
+  sliderEl.addEventListener("touchmove", handleTouchMove);
+  sliderEl.addEventListener("touchend", handleTouchEnd);
+  sliderEl.addEventListener("mousedown", handleMouseDown);
+  sliderEl.addEventListener("mouseleave", handleMouseUp);
+  sliderEl.addEventListener("dragstart", (e) => e.preventDefault());
+  track.addEventListener("click", handleSlideClick);
+
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseup", handleMouseUp);
+  window.addEventListener("resize", handleResize);
+
+  animate();
+});
 
 // OSMO Page transition

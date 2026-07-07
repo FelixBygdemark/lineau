@@ -303,3 +303,14 @@
 }
 
 
+/* ================================================================
+   HOME INFINITE SLIDER — reveal the title overlay on hover only while
+   the slider isn't actively moving. --slider-moving is set to 0/1 on
+   documentElement at runtime by the slider JS in site.js
+   (updateMovingState). See docs/WEBFLOW-INFINITE-SLIDER-STRUCTURE.md.
+   ================================================================ */
+.slide:hover .slide-overlay {
+  opacity: calc(1 - var(--slider-moving, 1));
+}
+
+
