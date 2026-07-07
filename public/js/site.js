@@ -2023,7 +2023,10 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
       const distanceFromCenter = slideCenter - viewportCenter;
       const parallaxOffset = distanceFromCenter * -0.25;
 
-      img.style.transform = `translateX(${parallaxOffset}px) scale(2.25)`;
+      // No scale — the image is 225%-wide and pre-centered via CSS
+      // (.home-slider-image: left: 50%); -50% here re-applies that
+      // centering since setting .transform overwrites any CSS transform.
+      img.style.transform = `translateX(calc(-50% + ${parallaxOffset}px))`;
     });
   }
 

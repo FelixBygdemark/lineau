@@ -59,20 +59,25 @@ its image/title/href — no component system required for this.
   reads the slide's actual rendered width from the DOM rather than a hardcoded value,
   and `buildLoop()` re-measures on every `resize`.
 - **`.slide-image`** — wraps the image. `width/height: 100%`, `overflow: hidden`,
-  `flex: 1`.
+  `flex: 1`, and **`position: relative`** (added in `site.css`, not the Designer — see
+  §3) so the oversized image inside it can be centered via `position: absolute`.
 - **Image** inside `.slide-image` — class **`home-slider-image`**. Must be a real
   Webflow **Image** element, not a background-image div — the JS finds it via
   `slide.querySelector("img")` and animates it directly every frame; a background-fill
   div wouldn't be matched, and the effect would silently do nothing (no error, it'd
-  just never zoom). Style: `width: 100%`, `height: 100%`, `object-fit: cover`,
+  just never pan). Designer style: `height: 100%`, `object-fit: cover`,
   `will-change: transform`, `user-select: none` (the last one stops the image being
-  drag-selected during the click-and-drag interaction). The JS later applies
-  `transform: scale(2.25)` on top of this for the parallax zoom effect — pick source
-  images with enough resolution/crop margin that a 2.25x zoom doesn't look soft or
-  crop out important content. One shared `home-slider-image` class works for all 8
-  slides — the class controls style, each instance's actual picture is set separately
-  via the Assets panel. Only add a combo class if a specific image needs its own style
-  override (e.g. a different `object-position` focal point).
+  drag-selected during the click-and-drag interaction). `site.css` (§3) overrides
+  `width` to **`225%`** and adds `position: absolute; top: 0; left: 50%` — the image is
+  deliberately wider than its container and centered, so the JS can pan it left/right
+  via `translateX` with **no scale/zoom at all** (this replaced an earlier
+  `transform: scale(2.25)` approach — panning a wider image reads as more natural
+  movement than scaling, and doesn't zoom in on an axis that's never animated). 225% =
+  125% wider than the slide, split evenly left/right, matching the pan range the old
+  scale gave. One shared `home-slider-image` class works for all 8 slides — the class
+  controls style, each instance's actual picture is set separately via the Assets
+  panel. Only add a combo class if a specific image needs its own style override (e.g.
+  a different `object-position` focal point).
 - **`.slide-overlay`** — `position: absolute`, anchored to the bottom of the slide
   (`bottom: -1.75rem; left: 0; right: 0`), holds only the title now. **Always visible**
   (`opacity: 1`, overridden in `site.css` — see §3) — the title itself is hidden/revealed
@@ -91,6 +96,19 @@ Add to the site's custom CSS (or this section's embed) — this overrides Webflo
 ```css
 .slide-overlay {
   opacity: 1;
+}
+
+/* Oversized + centered image for the pan-only parallax — no scale/zoom.
+   225% width = 125% wider than the slide, split evenly left/right. */
+.slide-image {
+  position: relative;
+}
+
+.home-slider-image {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 225%;
 }
 ```
 
@@ -130,8 +148,8 @@ don't act on them while building the static structure:
   once `sliderData.js` is removed, but if any module-style import remains, Webflow's
   custom code embed will need `<script type="module">` or a bundled/inlined file.
 - Images are managed directly in Webflow per-slide, so there's no path/CDN re-hosting
-  step needed for them — just confirm `object-fit: cover` + the `scale(2.25)` parallax
-  transform still read well against whatever aspect ratios are used for the 8 images.
+  step needed for them — just confirm `object-fit: cover` on the (225%-wide, centered)
+  image still reads well against whatever aspect ratios are used for the 8 images.
 
 ---
 

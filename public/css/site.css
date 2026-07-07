@@ -313,4 +313,20 @@
   opacity: 1;
 }
 
+/* Oversized + centered image for the pan-only parallax (no scale/zoom —
+   site.js pans it horizontally via translateX). 225% width = 125% wider
+   than the slide, split evenly left/right, matching the pan range the
+   old scale(2.25) approach gave. .slide-image needs position: relative
+   so the absolutely-positioned image centers against it. */
+.slide-image {
+  position: relative;
+}
+
+.home-slider-image {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 225%;
+}
+
 
