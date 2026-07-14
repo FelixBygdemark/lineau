@@ -1,17 +1,12 @@
 
 
-/* Hide scrollbar for Chrome, Safari, and Edge */
-.element::-webkit-scrollbar {
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
-
-/* Hide scrollbar for Firefox */
-.element {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE and Edge */
-}
-
-
 
 /* Nav stagger — trigger can be a parent; clip/line metrics on the text node */
 [data-nav-stagger-target],
