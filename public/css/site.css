@@ -8,17 +8,13 @@
   display: none;
 }
 
-.list:has(a:hover, a:focus-visible) a:not(:hover):not(:focus-visible) {
-  opacity: 0.3;
+.nav_column.is--1 .nav-b_link {
+  opacity: .5;
+  transition: opacity .2s ease;
 }
 
-
-.nav-b_link.w--current {
+.nav_column.is--1 .nav-b_link.w--current {
   opacity: 1;
-}
-
-.nav-b_link:has(a:hover, a:focus-visible) a:not(:hover):not(:focus-visible) {
-  opacity: 0.3;
 }
 
 /* Nav stagger — trigger can be a parent; clip/line metrics on the text node */
