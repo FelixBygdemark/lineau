@@ -12,6 +12,11 @@
   opacity: 0.3;
 }
 
+
+.nav-b_link.w--current {
+  opacity: 1;
+}
+
 /* Nav stagger — trigger can be a parent; clip/line metrics on the text node */
 [data-nav-stagger-target],
 [data-nav-stagger]:is(a) {
