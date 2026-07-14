@@ -17,6 +17,10 @@
   opacity: 1;
 }
 
+.list:has(a:hover, a:focus-visible) a:not(:hover):not(:focus-visible) {
+  opacity: 0.3;
+}
+
 /* Nav stagger — trigger can be a parent; clip/line metrics on the text node */
 [data-nav-stagger-target],
 [data-nav-stagger]:is(a) {
