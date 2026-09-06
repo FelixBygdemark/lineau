@@ -81,99 +81,129 @@ function initAfterEnterFunctions(next) {
 // PAGE TRANSITIONS
 // -----------------------------------------
 
-// Every transition (any namespace): [data-page-scale] recedes while
-// [data-transition-panel] wipes from below the screen up to fully cover it.
-// Both start together. All of this lives inside the boilerplate's three
-// runPage*Animation functions — the hooks and barba.init are untouched.
-const WIPE_DURATION = 1.1;
-const WIPE_EASE = "power3.inOut";
-const PAGE_SCALE = 0.94;
-
-function getTransitionPanel() {
-  const el = document.querySelector("[data-transition-panel]");
-  if (!el) {
-    console.warn("[transition] no [data-transition-panel] element found");
-  } else if (getComputedStyle(el).backgroundColor === "rgba(0, 0, 0, 0)") {
-    console.warn("[transition] [data-transition-panel] background is transparent — the wipe will be invisible");
-  }
-  return el;
-}
-
 function runPageOnceAnimation(next) {
   const tl = gsap.timeline();
 
-  gsap.set(getTransitionPanel(), { yPercent: 100 }); // parked below the screen
-
   tl.call(() => {
-    resetPage(next);
-    // Barba's `once` doesn't fire the enter hooks, so the page-specific inits
-    // (slider, parallax, marquee…) have to run here or they never run on a
-    // hard page load.
-    initAfterEnterFunctions(next);
+    resetPage(next)
   }, null, 0);
 
   return tl;
 }
 
 function runPageLeaveAnimation(current, next) {
-  const panel = getTransitionPanel();
-  const scaleEl = current.querySelector("[data-page-scale]") || current;
-
-  if (reducedMotion) {
-    gsap.set(current, { autoAlpha: 0 });
-    current.remove();
-    return Promise.resolve();
-  }
-
-  // Returned as a Promise (not a bare timeline) so Barba definitely waits for
-  // the full wipe before ending the transition.
-  return new Promise((resolve) => {
-    const tl = gsap.timeline({
-      onComplete: () => { current.remove(); resolve(); }
-    });
-
-    // Panel: below the screen -> covering it.  Page: recede.  Same start (0).
-    tl.fromTo(panel,
-      { yPercent: 100 },
-      { yPercent: 0, duration: WIPE_DURATION, ease: WIPE_EASE },
-      0);
-    tl.to(scaleEl,
-      { scale: PAGE_SCALE, duration: WIPE_DURATION, ease: WIPE_EASE },
-      0);
+  const parent = current.parentElement || document.body;
+  const transitionWrap = document.querySelector("[data-transition-wrap]");
+  const transitionDark = transitionWrap.querySelector("[data-transition-dark]");
+  
+  // Helper function to prepare transition structure
+  const { wrapper } = prepareForTransition(parent, current, next);
+  
+  const tl = gsap.timeline({
+    onComplete: () => {
+      wrapper.replaceWith(next);
+      gsap.set(next, {clearProps: "all" });
+    }
   });
+  
+  if (reducedMotion) {
+    // Immediate swap behavior if user prefers reduced motion
+    return tl.set(current, { autoAlpha: 0 });
+  }
+  
+  tl.set(transitionWrap, {
+    zIndex: 2
+  });
+  
+  tl.fromTo(transitionDark, {
+    autoAlpha: 0
+  },{
+    autoAlpha: 0.2,
+    duration: 1.2,
+  });  
+
+  tl.to(wrapper, {
+    yPercent: 0,
+    duration: 1,
+  }, "<");
+
+  tl.to(wrapper, {
+    duration: 1.2,
+    clipPath: "inset(0% round 0em)"
+  }, "<");
+  
+  tl.to(current, {
+    y: "-10vh",
+    scale: 1.2,
+    duration: 1.2,
+    overwrite: "auto"
+  }, "<");
+  
+  tl.set(transitionDark, {
+    autoAlpha: 0,
+  });
+  
+  return tl;
 }
 
 function runPageEnterAnimation(next){
-  const panel = getTransitionPanel();
-  const scaleEl = next.querySelector("[data-page-scale]") || next;
-
-  // Keep the incoming page hidden until the panel is covering the screen.
-  gsap.set(next, { autoAlpha: 0 });
-  gsap.set(scaleEl, { scale: 1 });
-
+  const tl = gsap.timeline();
+  
   if (reducedMotion) {
-    gsap.set(next, { autoAlpha: 1 });
-    gsap.set(panel, { yPercent: 100 });
-    resetPage(next);
-    return Promise.resolve();
+    // Immediate swap behavior if user prefers reduced motion
+    tl.set(next, { autoAlpha: 1 });
+    tl.add("pageReady")
+    tl.call(resetPage, [next], "pageReady");
+    return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  return new Promise((resolve) => {
-    const tl = gsap.timeline({
-      onComplete: () => { resetPage(next); resolve(); }
-    });
+  tl.add("pageReady");
+  tl.call(resetPage, [next], "pageReady");
 
-    // Real spacer tween (not a label) — holds until the wipe in
-    // runPageLeaveAnimation has finished covering, + a small buffer so the two
-    // panel tweens can't land on the same frame.
-    tl.to({}, { duration: WIPE_DURATION + 0.08 });
-
-    // Panel is covering — reveal the new page behind it, reset scroll, then
-    // drop the panel back below the screen (same colour, so it's unseen).
-    tl.set(next, { autoAlpha: 1, immediateRender: false });
-    tl.call(() => window.scrollTo(0, 0));
-    tl.set(panel, { yPercent: 100, immediateRender: false });
+  return new Promise(resolve => {
+    tl.call(resolve, null, "pageReady");
   });
+}
+
+function prepareForTransition(parent, current, next){
+
+  const scrollY = window.scrollY;
+
+  // Freeze current page in place
+  gsap.set(current, {
+    position: "fixed",
+    top: -scrollY,
+    left: 0,
+    width: "100%",
+    overflow: "hidden"
+  });
+
+  // Reset browser scroll so next page starts correctly
+  window.scrollTo(0, 0);
+
+  // Create wrapper
+  const wrapper = document.createElement("div");
+  wrapper.className = "page-transition__wrapper";
+
+  parent.insertBefore(wrapper, next);
+  wrapper.appendChild(next);
+
+  gsap.set(wrapper, {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    width: "100%",
+    height: "100vh",
+    yPercent: 50,
+    overflow: "clip",
+    zIndex: 5,
+    transformStyle: "preserve-3d",
+    willChange: "transform, clip-path",
+    clipPath: "inset(50% round 3em)",
+  });
+
+  return { wrapper };
 }
 
 
@@ -189,11 +219,11 @@ barba.hooks.beforeEnter(data => {
     left: 0,
     right: 0,
   });
-
+  
   if (lenis && typeof lenis.stop === "function") {
     lenis.stop();
   }
-
+  
   initBeforeEnterFunctions(data.next.container);
   applyThemeFrom(data.next.container);
 });
