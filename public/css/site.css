@@ -350,7 +350,7 @@
 }
 
 [data-page-scale] {
-  transform-origin: 50% 50%;    /* JS overrides to viewport-centre on leave */
+  transform-origin: 50% 50%;
   will-change: transform;
   min-height: 100vh;
   min-height: 100svh;

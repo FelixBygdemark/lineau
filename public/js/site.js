@@ -51,9 +51,8 @@ function initOnceFunctions() {
 function initBeforeEnterFunctions(next) {
   nextPage = next || document;
 
-  // Runs before the enter animation — set the incoming page's intro "from"
-  // states now, while the container is still autoAlpha:0, so nothing flashes.
-  setNamespaceIntroInitial(next);
+  // Runs before the enter animation
+  // if (has('[data-something]')) initSomething();
 }
 
 function initAfterEnterFunctions(next) {
@@ -83,34 +82,35 @@ function initAfterEnterFunctions(next) {
 // PAGE TRANSITIONS
 // -----------------------------------------
 
-// House-of-Gucci wipe. All of this lives INSIDE the boilerplate's three
+// Every transition (any namespace): [data-page-scale] recedes while
+// [data-transition-panel] wipes from below the screen up to fully cover it.
+// Both start together. All of this lives inside the boilerplate's three
 // runPage*Animation functions — the hooks and barba.init are untouched.
-const TRANSITION = {
-  wipeDur: 0.8,          // panel travel time
-  ease: "power3.inOut",  // ≈ cubic-bezier(0.65, 0, 0.35, 1)
-  scaleTo: 0.94,         // outgoing page recede
-  scaleOffset: 0.05,     // recede starts this long after the panel
-  revealAt: 0.85,        // new page cut in + panel parked (just after the wipe)
-};
+const WIPE_DURATION = 1.1;
+const WIPE_EASE = "power3.inOut";
+const PAGE_SCALE = 0.94;
 
 function getTransitionPanel() {
-  const panel = document.querySelector("[data-transition-panel]");
-  if (!panel) console.warn("[transition] [data-transition-panel] not found — wipe skipped");
-  return panel;
+  const el = document.querySelector("[data-transition-panel]");
+  if (!el) {
+    console.warn("[transition] no [data-transition-panel] element found");
+  } else if (getComputedStyle(el).backgroundColor === "rgba(0, 0, 0, 0)") {
+    console.warn("[transition] [data-transition-panel] background is transparent — the wipe will be invisible");
+  }
+  return el;
 }
 
 function runPageOnceAnimation(next) {
   const tl = gsap.timeline();
 
-  gsap.set(getTransitionPanel(), { yPercent: 100 }); // parked
+  gsap.set(getTransitionPanel(), { yPercent: 100 }); // parked below the screen
 
   tl.call(() => {
     resetPage(next);
-    // Barba's `once` does not fire the enter hooks, so the page-specific inits
-    // (slider, parallax, marquee…) have to be kicked off here or they never
-    // run on a hard page load.
+    // Barba's `once` doesn't fire the enter hooks, so the page-specific inits
+    // (slider, parallax, marquee…) have to run here or they never run on a
+    // hard page load.
     initAfterEnterFunctions(next);
-    runNamespaceIntro(next.getAttribute("data-barba-namespace"), next);
   }, null, 0);
 
   return tl;
@@ -127,20 +127,14 @@ function runPageLeaveAnimation(current, next) {
     return tl.set(current, { autoAlpha: 0 });
   }
 
-  // Pivot the recede around the viewport centre, whatever the scroll position.
-  const rect = scaleEl.getBoundingClientRect();
-  gsap.set(scaleEl, { transformOrigin: `50% ${-rect.top + window.innerHeight / 2}px` });
-
-  // Panel wipes up from below to fully cover the viewport.
+  // Panel: below the screen -> covering it.  Page: recede.  Same start (0).
   tl.fromTo(panel,
     { yPercent: 100 },
-    { yPercent: 0, duration: TRANSITION.wipeDur, ease: TRANSITION.ease },
+    { yPercent: 0, duration: WIPE_DURATION, ease: WIPE_EASE },
     0);
-
-  // Outgoing page recedes behind it.
   tl.to(scaleEl,
-    { scale: TRANSITION.scaleTo, duration: TRANSITION.wipeDur, ease: TRANSITION.ease },
-    TRANSITION.scaleOffset);
+    { scale: PAGE_SCALE, duration: WIPE_DURATION, ease: WIPE_EASE },
+    0);
 
   return tl;
 }
@@ -148,86 +142,31 @@ function runPageLeaveAnimation(current, next) {
 function runPageEnterAnimation(next){
   const panel = getTransitionPanel();
   const scaleEl = next.querySelector("[data-page-scale]") || next;
-  const namespace = next.getAttribute("data-barba-namespace");
-
-  // Hide the incoming page synchronously so it never flashes over the outgoing
-  // one during the wipe (the boilerplate's hooks don't touch autoAlpha).
-  gsap.set(next, { autoAlpha: 0 });
-  gsap.set(scaleEl, { scale: 1, transformOrigin: "50% 50%" });
-
   const tl = gsap.timeline();
+
+  // Keep the incoming page hidden until the panel is covering the screen.
+  gsap.set(next, { autoAlpha: 0 });
+  gsap.set(scaleEl, { scale: 1 });
 
   if (reducedMotion) {
     tl.set(next, { autoAlpha: 1 });
     tl.set(panel, { yPercent: 100 });
     tl.add("pageReady");
     tl.call(resetPage, [next], "pageReady");
-    tl.call(() => runNamespaceIntro(namespace, next), null, "pageReady");
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  // Panel is covering by now — hard-cut the new page in behind it, park the panel.
-  tl.add("reveal", TRANSITION.revealAt);
-  tl.set(next, { autoAlpha: 1 }, "reveal");
-  tl.call(() => window.scrollTo(0, 0), null, "reveal");
-  tl.set(panel, { yPercent: 100, overwrite: true }, "reveal"); // park — same colour, invisible
+  // Panel has finished covering — swap the new page in behind it, then park
+  // the panel back below the screen (same colour, so the park is invisible).
+  tl.add("covered", WIPE_DURATION + 0.05);
+  tl.set(next, { autoAlpha: 1 }, "covered");
+  tl.call(() => window.scrollTo(0, 0), null, "covered");
+  tl.set(panel, { yPercent: 100 }, "covered");
 
-  tl.add("pageReady", "reveal");
+  tl.add("pageReady", "covered");
   tl.call(resetPage, [next], "pageReady");
-  tl.call(() => runNamespaceIntro(namespace, next), null, "pageReady");
 
-  // Resolve the transition; the namespace intro plays on independently.
   return new Promise(resolve => tl.call(resolve, null, "pageReady"));
-}
-
-
-// -----------------------------------------
-// PAGE INTRO ANIMATIONS (per namespace)
-// -----------------------------------------
-
-// Hidden "from" states — set from initBeforeEnterFunctions while the container
-// is still autoAlpha:0, so nothing flashes before the wipe uncovers the page.
-function setNamespaceIntroInitial(container) {
-  if (!container || reducedMotion) return;
-  gsap.set(container.querySelectorAll('[data-intro="fade-up"]'), { autoAlpha: 0, y: 24 });
-  gsap.set(container.querySelectorAll('[data-intro="mask-line"]'), { yPercent: 110 });
-}
-
-function runNamespaceIntro(namespace, container) {
-  const tl = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.8 } });
-  if (!container || reducedMotion) return tl;
-
-  switch (namespace) {
-    case "home":
-      return introHome(container, tl);
-    case "about":
-      return introAbout(container, tl);
-    case "case":
-      return introCase(container, tl);
-    default:
-      return tl;
-  }
-}
-
-function introHome(container, tl) {
-  // TODO: real home reveal
-  tl.to(container.querySelectorAll('[data-intro="mask-line"]'), { yPercent: 0, stagger: 0.06 }, 0);
-  tl.to(container.querySelectorAll('[data-intro="fade-up"]'), { autoAlpha: 1, y: 0, stagger: 0.08 }, 0.1);
-  return tl;
-}
-
-function introAbout(container, tl) {
-  // TODO: real about reveal
-  tl.to(container.querySelectorAll('[data-intro="mask-line"]'), { yPercent: 0, stagger: 0.06 }, 0);
-  tl.to(container.querySelectorAll('[data-intro="fade-up"]'), { autoAlpha: 1, y: 0, stagger: 0.08 }, 0.1);
-  return tl;
-}
-
-function introCase(container, tl) {
-  // TODO: real case reveal
-  tl.to(container.querySelectorAll('[data-intro="mask-line"]'), { yPercent: 0, stagger: 0.06 }, 0);
-  tl.to(container.querySelectorAll('[data-intro="fade-up"]'), { autoAlpha: 1, y: 0, stagger: 0.08 }, 0.1);
-  return tl;
 }
 
 
