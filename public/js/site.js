@@ -247,7 +247,7 @@ function initLenis() {
   if (!hasLenis) return;
 
   lenis = new Lenis({
-    lerp: 0.025,
+    lerp: 0.090,
     wheelMultiplier: 1.25,
   });
 
