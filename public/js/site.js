@@ -118,54 +118,62 @@ function runPageOnceAnimation(next) {
 function runPageLeaveAnimation(current, next) {
   const panel = getTransitionPanel();
   const scaleEl = current.querySelector("[data-page-scale]") || current;
-  const tl = gsap.timeline({
-    onComplete: () => { current.remove() }
-  });
 
   if (reducedMotion) {
-    return tl.set(current, { autoAlpha: 0 });
+    gsap.set(current, { autoAlpha: 0 });
+    current.remove();
+    return Promise.resolve();
   }
 
-  // Panel: below the screen -> covering it.  Page: recede.  Same start (0).
-  tl.fromTo(panel,
-    { yPercent: 100 },
-    { yPercent: 0, duration: WIPE_DURATION, ease: WIPE_EASE },
-    0);
-  tl.to(scaleEl,
-    { scale: PAGE_SCALE, duration: WIPE_DURATION, ease: WIPE_EASE },
-    0);
+  // Returned as a Promise (not a bare timeline) so Barba definitely waits for
+  // the full wipe before ending the transition.
+  return new Promise((resolve) => {
+    const tl = gsap.timeline({
+      onComplete: () => { current.remove(); resolve(); }
+    });
 
-  return tl;
+    // Panel: below the screen -> covering it.  Page: recede.  Same start (0).
+    tl.fromTo(panel,
+      { yPercent: 100 },
+      { yPercent: 0, duration: WIPE_DURATION, ease: WIPE_EASE },
+      0);
+    tl.to(scaleEl,
+      { scale: PAGE_SCALE, duration: WIPE_DURATION, ease: WIPE_EASE },
+      0);
+  });
 }
 
 function runPageEnterAnimation(next){
   const panel = getTransitionPanel();
   const scaleEl = next.querySelector("[data-page-scale]") || next;
-  const tl = gsap.timeline();
 
   // Keep the incoming page hidden until the panel is covering the screen.
   gsap.set(next, { autoAlpha: 0 });
   gsap.set(scaleEl, { scale: 1 });
 
   if (reducedMotion) {
-    tl.set(next, { autoAlpha: 1 });
-    tl.set(panel, { yPercent: 100 });
-    tl.add("pageReady");
-    tl.call(resetPage, [next], "pageReady");
-    return new Promise(resolve => tl.call(resolve, null, "pageReady"));
+    gsap.set(next, { autoAlpha: 1 });
+    gsap.set(panel, { yPercent: 100 });
+    resetPage(next);
+    return Promise.resolve();
   }
 
-  // Panel has finished covering — swap the new page in behind it, then park
-  // the panel back below the screen (same colour, so the park is invisible).
-  tl.add("covered", WIPE_DURATION + 0.05);
-  tl.set(next, { autoAlpha: 1 }, "covered");
-  tl.call(() => window.scrollTo(0, 0), null, "covered");
-  tl.set(panel, { yPercent: 100 }, "covered");
+  return new Promise((resolve) => {
+    const tl = gsap.timeline({
+      onComplete: () => { resetPage(next); resolve(); }
+    });
 
-  tl.add("pageReady", "covered");
-  tl.call(resetPage, [next], "pageReady");
+    // Real spacer tween (not a label) — holds until the wipe in
+    // runPageLeaveAnimation has finished covering, + a small buffer so the two
+    // panel tweens can't land on the same frame.
+    tl.to({}, { duration: WIPE_DURATION + 0.08 });
 
-  return new Promise(resolve => tl.call(resolve, null, "pageReady"));
+    // Panel is covering — reveal the new page behind it, reset scroll, then
+    // drop the panel back below the screen (same colour, so it's unseen).
+    tl.set(next, { autoAlpha: 1, immediateRender: false });
+    tl.call(() => window.scrollTo(0, 0));
+    tl.set(panel, { yPercent: 100, immediateRender: false });
+  });
 }
 
 
