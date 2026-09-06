@@ -70,3 +70,97 @@ function initCaseScrollTitles() {
 }
 
 document.addEventListener("DOMContentLoaded", initCaseScrollTitles);
+
+
+
+// LINEAU SKEW ON SCROLL (Project cards)
+const clamp = gsap.utils.clamp;
+
+// Parse attribute formats:
+// data-scroll-skew="y:10"  -> axis y, max 10deg
+// data-scroll-skew="x:6"   -> axis x, max 6deg
+// data-scroll-skew="8"     -> axis y (default), max 8deg
+// data-scroll-skew=""      -> axis y, max 10deg (default)
+function parseSkewAttr(el) {
+  const raw = (el.getAttribute('data-scroll-skew') || '').trim();
+  let axis = 'y';
+  let maxDeg = 10;
+
+  if (!raw) return { axis, maxDeg };
+
+  if (raw.includes(':')) {
+    const [a, v] = raw.split(':').map(s => s.trim());
+    if (a === 'x' || a === 'y') axis = a;
+    const n = parseFloat(v);
+    if (!Number.isNaN(n)) maxDeg = n;
+  } else {
+    const n = parseFloat(raw);
+    if (!Number.isNaN(n)) maxDeg = n;
+  }
+  return { axis, maxDeg };
+}
+
+// Create one ScrollTrigger per element
+document.querySelectorAll('[data-scroll-skew]').forEach((el) => {
+  const { axis, maxDeg } = parseSkewAttr(el);
+
+  // Use a proxy object so we can animate back to 0
+  const proxy = { skew: 0 };
+  const setter = gsap.quickSetter(el, axis === 'x' ? 'skewX' : 'skewY', 'deg');
+
+  // Optional: avoid stacking transforms from other code by initializing skew to 0
+  gsap.set(el, { skewX: 0, skewY: 0 });
+
+  ScrollTrigger.create({
+    trigger: el,
+    start: 'top bottom',   // start affecting when the element enters the viewport
+    end: 'bottom top',     // stop affecting when it leaves
+    onUpdate(self) {
+      // Velocity is px/sec. Normalize a bit so the effect feels natural.
+      // Tweak the divisor (e.g. 60–150) to taste.
+      const v = self.getVelocity();
+      const target = clamp(-maxDeg, maxDeg, (v / 800) ); // map velocity to degrees
+
+      // Only "kick" if stronger than current (prevents tiny updates fighting ease-out)
+      if (Math.abs(target) > Math.abs(proxy.skew)) {
+        proxy.skew = target;
+        setter(proxy.skew);
+
+        // Smoothly ease back to 0
+        gsap.to(proxy, {
+          skew: 0,
+          duration: 0.6,
+          ease: 'power3.out',
+          overwrite: true,
+          onUpdate: () => setter(proxy.skew),
+        });
+      }
+    },
+    // If you want it active only while visible, keep the default toggleActions.
+    // For pinned/long sections you could add scrub, but not needed here.
+  });
+});
+
+// Refresh after images/fonts load (bounds change affect velocity timing)
+window.addEventListener('load', () => {
+  lenis?.scrollTo(0, { immediate: true });
+  ScrollTrigger.refresh();
+});
+
+
+// ––––––––– Parallax using data-parallax
+// document.querySelectorAll('[data-parallax]').forEach(el => {
+//   const parallaxValue = parseFloat(el.getAttribute('data-parallax')) || 10;
+  
+//   gsap.fromTo(el, { yPercent: -parallaxValue },
+//   {
+//     yPercent: parallaxValue,
+//     ease: "none",
+//     scrollTrigger: {
+//       trigger: el,
+//       start: "top bottom",
+//       end: "bottom top",
+//       scrub: true
+//     }
+//   });
+// });

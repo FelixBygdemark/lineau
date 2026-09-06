@@ -1,4 +1,336 @@
-// Scroll-to-top on load/refresh is handled by Webflow custom code (see webflow-scroll-to-top.html)
+// -----------------------------------------
+// OSMO PAGE TRANSITION BOILERPLATE
+// -----------------------------------------
+
+gsap.registerPlugin(CustomEase);
+
+history.scrollRestoration = "manual";
+
+let lenis = null;
+let nextPage = document;
+let onceFunctionsInitialized = false;
+
+const hasLenis = typeof window.Lenis !== "undefined";
+const hasScrollTrigger = typeof window.ScrollTrigger !== "undefined";
+
+const rmMQ = window.matchMedia("(prefers-reduced-motion: reduce)");
+let reducedMotion = rmMQ.matches;
+rmMQ.addEventListener?.("change", e => (reducedMotion = e.matches));
+rmMQ.addListener?.(e => (reducedMotion = e.matches)); 
+
+const has = (s) => !!nextPage.querySelector(s);
+
+let staggerDefault = 0.05;
+let durationDefault = 0.6;
+
+CustomEase.create("osmo", "0.625, 0.05, 0, 1");
+gsap.defaults({ ease: "osmo", duration: durationDefault });
+
+
+
+// -----------------------------------------
+// FUNCTION REGISTRY
+// -----------------------------------------
+
+function initOnceFunctions() {
+  initLenis();
+  if (onceFunctionsInitialized) return;
+  onceFunctionsInitialized = true;
+  
+  // Runs once on first load
+  // if (has('[data-something]')) initSomething();
+}
+
+function initBeforeEnterFunctions(next) {
+  nextPage = next || document;
+  
+  // Runs before the enter animation
+  // if (has('[data-something]')) initSomething();
+}
+
+function initAfterEnterFunctions(next) {
+  nextPage = next || document;
+  
+  // Runs after enter animation completes
+  // if (has('[data-something]')) initSomething();
+  
+  
+  if(hasLenis){
+    lenis.resize();
+  }
+  
+  if (hasScrollTrigger) {
+    ScrollTrigger.refresh();
+  }
+}
+
+
+
+// -----------------------------------------
+// PAGE TRANSITIONS
+// -----------------------------------------
+
+function runPageOnceAnimation(next) {
+  const tl = gsap.timeline();
+
+  tl.call(() => {
+    resetPage(next)
+  }, null, 0);
+
+  return tl;
+}
+
+function runPageLeaveAnimation(current, next) {
+  const tl = gsap.timeline({
+    onComplete: () => { current.remove() }
+  });
+  
+  if (reducedMotion) {
+    // Immediate swap behavior if user prefers reduced motion
+    return tl.set(current, { autoAlpha: 0 });
+  }
+
+  tl.to(current, { autoAlpha: 0, duration: 0.4 });
+
+  return tl;
+}
+
+function runPageEnterAnimation(next){
+  const tl = gsap.timeline();
+  
+  if (reducedMotion) {
+    // Immediate swap behavior if user prefers reduced motion
+    tl.set(next, { autoAlpha: 1 });
+    tl.add("pageReady")
+    tl.call(resetPage, [next], "pageReady");
+    return new Promise(resolve => tl.call(resolve, null, "pageReady"));
+  }
+  
+  tl.add("startEnter", 0.6);
+  
+  tl.fromTo(next, {
+    autoAlpha: 0,
+  },{
+    autoAlpha: 1,
+  }, "startEnter");
+
+  tl.add("pageReady");
+  tl.call(resetPage, [next], "pageReady");
+
+  return new Promise(resolve => {
+    tl.call(resolve, null, "pageReady");
+  });
+}
+
+
+// -----------------------------------------
+// BARBA HOOKS + INIT
+// -----------------------------------------
+
+barba.hooks.beforeEnter(data => {
+  // Position new container on top
+  gsap.set(data.next.container, {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+  });
+  
+  if (lenis && typeof lenis.stop === "function") {
+    lenis.stop();
+  }
+  
+  initBeforeEnterFunctions(data.next.container);
+  applyThemeFrom(data.next.container);
+});
+
+barba.hooks.afterLeave(() => {
+  if(hasScrollTrigger){
+    ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+  }
+});
+
+barba.hooks.enter(data => {
+  initBarbaNavUpdate(data);
+})
+
+barba.hooks.afterEnter(data => {
+  // Run page functions
+  initAfterEnterFunctions(data.next.container);
+  
+  // Settle
+  if(hasLenis){
+    lenis.resize();
+    lenis.start();    
+  }
+  
+  if(hasScrollTrigger){
+    ScrollTrigger.refresh(); 
+  }
+});
+
+barba.init({
+  debug: true, // Set to 'false' in production
+  timeout: 7000,
+  preventRunning: true,
+  transitions: [
+    {
+      name: "default",
+      sync: true,
+      
+      // First load
+      async once(data) {
+        initOnceFunctions();
+
+        return runPageOnceAnimation(data.next.container);
+      },
+
+      // Current page leaves
+      async leave(data) {
+        return runPageLeaveAnimation(data.current.container, data.next.container);
+      },
+
+      // New page enters
+      async enter(data) {
+        return runPageEnterAnimation(data.next.container);
+      }
+    }
+  ],
+});
+
+
+
+// -----------------------------------------
+// GENERIC + HELPERS
+// -----------------------------------------
+
+const themeConfig = {
+  light: {
+    nav: "dark",
+    transition: "light"
+  },
+  dark: {
+    nav: "light",
+    transition: "dark"
+  }
+};
+
+function applyThemeFrom(container) {
+  const pageTheme = container?.dataset?.pageTheme || "light";
+  const config = themeConfig[pageTheme] || themeConfig.light;
+  
+  document.body.dataset.pageTheme = pageTheme;
+  const transitionEl = document.querySelector('[data-theme-transition]');
+  if (transitionEl) {
+    transitionEl.dataset.themeTransition = config.transition;
+  }
+
+  const nav = document.querySelector('[data-theme-nav]');
+  if (nav) {
+    nav.dataset.themeNav = config.nav;
+  }
+}
+
+function initLenis() {
+  if (lenis) return; // already created
+  if (!hasLenis) return;
+
+  lenis = new Lenis({
+    lerp: 0.165,
+    wheelMultiplier: 1.25,
+  });
+
+  if (hasScrollTrigger) {
+    lenis.on("scroll", ScrollTrigger.update);
+  }
+
+  gsap.ticker.add((time) => {
+    lenis.raf(time * 1000);
+  });
+
+  gsap.ticker.lagSmoothing(0);
+}
+
+function resetPage(container){
+  window.scrollTo(0, 0);
+  gsap.set(container, { clearProps: "position,top,left,right" });
+  
+  if(hasLenis){
+    lenis.resize();
+    lenis.start();    
+  }
+}
+
+function debounceOnWidthChange(fn, ms) {
+  let last = innerWidth,
+    timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (innerWidth !== last) {
+        last = innerWidth;
+        fn.apply(this, args);
+      }
+    }, ms);
+  };
+}
+
+function initBarbaNavUpdate(data) {
+  var tpl = document.createElement('template');
+  tpl.innerHTML = data.next.html.trim();
+  var nextNodes = tpl.content.querySelectorAll('[data-barba-update]');
+  var currentNodes = document.querySelectorAll('nav [data-barba-update]');
+
+  currentNodes.forEach(function (curr, index) {
+    var next = nextNodes[index];
+    if (!next) return;
+
+    // Aria-current sync
+    var newStatus = next.getAttribute('aria-current');
+    if (newStatus !== null) {
+      curr.setAttribute('aria-current', newStatus);
+    } else {
+      curr.removeAttribute('aria-current');
+    }
+
+    // Class list sync
+    var newClassList = next.getAttribute('class') || '';
+    curr.setAttribute('class', newClassList);
+  });
+}
+
+
+
+// -----------------------------------------
+// YOUR FUNCTIONS GO BELOW HERE
+// -----------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Ensure Webflow & DOM are ready
 window.Webflow ||= [];
@@ -34,82 +366,6 @@ gsap.ticker.add((time) => {
 
 // Disable lag smoothing in GSAP to prevent any delay in scroll animations
 gsap.ticker.lagSmoothing(0);
-
-
-
-// LINEAU SKEW ON SCROLL (Project cards)
-const clamp = gsap.utils.clamp;
-
-// Parse attribute formats:
-// data-scroll-skew="y:10"  -> axis y, max 10deg
-// data-scroll-skew="x:6"   -> axis x, max 6deg
-// data-scroll-skew="8"     -> axis y (default), max 8deg
-// data-scroll-skew=""      -> axis y, max 10deg (default)
-function parseSkewAttr(el) {
-  const raw = (el.getAttribute('data-scroll-skew') || '').trim();
-  let axis = 'y';
-  let maxDeg = 10;
-
-  if (!raw) return { axis, maxDeg };
-
-  if (raw.includes(':')) {
-    const [a, v] = raw.split(':').map(s => s.trim());
-    if (a === 'x' || a === 'y') axis = a;
-    const n = parseFloat(v);
-    if (!Number.isNaN(n)) maxDeg = n;
-  } else {
-    const n = parseFloat(raw);
-    if (!Number.isNaN(n)) maxDeg = n;
-  }
-  return { axis, maxDeg };
-}
-
-// Create one ScrollTrigger per element
-document.querySelectorAll('[data-scroll-skew]').forEach((el) => {
-  const { axis, maxDeg } = parseSkewAttr(el);
-
-  // Use a proxy object so we can animate back to 0
-  const proxy = { skew: 0 };
-  const setter = gsap.quickSetter(el, axis === 'x' ? 'skewX' : 'skewY', 'deg');
-
-  // Optional: avoid stacking transforms from other code by initializing skew to 0
-  gsap.set(el, { skewX: 0, skewY: 0 });
-
-  ScrollTrigger.create({
-    trigger: el,
-    start: 'top bottom',   // start affecting when the element enters the viewport
-    end: 'bottom top',     // stop affecting when it leaves
-    onUpdate(self) {
-      // Velocity is px/sec. Normalize a bit so the effect feels natural.
-      // Tweak the divisor (e.g. 60–150) to taste.
-      const v = self.getVelocity();
-      const target = clamp(-maxDeg, maxDeg, (v / 800) ); // map velocity to degrees
-
-      // Only "kick" if stronger than current (prevents tiny updates fighting ease-out)
-      if (Math.abs(target) > Math.abs(proxy.skew)) {
-        proxy.skew = target;
-        setter(proxy.skew);
-
-        // Smoothly ease back to 0
-        gsap.to(proxy, {
-          skew: 0,
-          duration: 0.6,
-          ease: 'power3.out',
-          overwrite: true,
-          onUpdate: () => setter(proxy.skew),
-        });
-      }
-    },
-    // If you want it active only while visible, keep the default toggleActions.
-    // For pinned/long sections you could add scrub, but not needed here.
-  });
-});
-
-// Refresh after images/fonts load (bounds change affect velocity timing)
-window.addEventListener('load', () => {
-  lenis?.scrollTo(0, { immediate: true });
-  ScrollTrigger.refresh();
-});
 
 
 
@@ -207,22 +463,6 @@ if (!window.__PARALLAX_DEFER_INIT__) {
 
 
 
-// ––––––––– Parallax using data-parallax
-// document.querySelectorAll('[data-parallax]').forEach(el => {
-//   const parallaxValue = parseFloat(el.getAttribute('data-parallax')) || 10;
-  
-//   gsap.fromTo(el, { yPercent: -parallaxValue },
-//   {
-//     yPercent: parallaxValue,
-//     ease: "none",
-//     scrollTrigger: {
-//       trigger: el,
-//       start: "top bottom",
-//       end: "bottom top",
-//       scrub: true
-//     }
-//   });
-// });
 
 
 
@@ -546,69 +786,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// Magnetic button
-
-function initMagneticEffect() {
-  const magnets = document.querySelectorAll('[data-magnetic-strength]');
-  if (window.innerWidth <= 991) return;
-  
-  // Helper to kill tweens and reset an element.
-  const resetEl = (el, immediate) => {
-    if (!el) return;
-    gsap.killTweensOf(el);
-    (immediate ? gsap.set : gsap.to)(el, {
-      x: "0em",
-      y: "0em",
-      rotate: "0deg",
-      clearProps: "all",
-      ...(!immediate && { ease: "elastic.out(1, 0.3)", duration: 1.6 })
-    });
-  };
-
-  const resetOnEnter = e => {
-    const m = e.currentTarget;
-    resetEl(m, true);
-    resetEl(m.querySelector('[data-magnetic-inner-target]'), true);
-  };
-
-  const moveMagnet = e => {
-    const m = e.currentTarget,
-      b = m.getBoundingClientRect(),
-      strength = parseFloat(m.getAttribute('data-magnetic-strength')) || 25,
-      inner = m.querySelector('[data-magnetic-inner-target]'),
-      innerStrength = parseFloat(m.getAttribute('data-magnetic-strength-inner')) || strength,
-      offsetX = ((e.clientX - b.left) / m.offsetWidth - 0.5) * (strength / 16),
-      offsetY = ((e.clientY - b.top) / m.offsetHeight - 0.5) * (strength / 16);
-    
-    gsap.to(m, { x: offsetX + "em", y: offsetY + "em", rotate: "0.001deg", ease: "power4.out", duration: 1.6 });
-    
-    if (inner) {
-      const innerOffsetX = ((e.clientX - b.left) / m.offsetWidth - 0.5) * (innerStrength / 16),
-        innerOffsetY = ((e.clientY - b.top) / m.offsetHeight - 0.5) * (innerStrength / 16);
-      gsap.to(inner, { x: innerOffsetX + "em", y: innerOffsetY + "em", rotate: "0.001deg", ease: "power4.out", duration: 2 });
-    }
-  };
-
-  const resetMagnet = e => {
-    const m = e.currentTarget,
-      inner = m.querySelector('[data-magnetic-inner-target]');
-    gsap.to(m, { x: "0em", y: "0em", ease: "elastic.out(1, 0.3)", duration: 1.6, clearProps: "all" });
-    if (inner) {
-      gsap.to(inner, { x: "0em", y: "0em", ease: "elastic.out(1, 0.3)", duration: 2, clearProps: "all" });
-    }
-  };
-
-  magnets.forEach(m => {
-    m.addEventListener('mouseenter', resetOnEnter);
-    m.addEventListener('mousemove', moveMagnet);
-    m.addEventListener('mouseleave', resetMagnet);
-  });
-}
-
-// Initialize Magnetic Effect
-document.addEventListener('DOMContentLoaded', () => {
-  initMagneticEffect();
-});
 
 // Bunny player background
 function initBunnyPlayerBackground() {
@@ -1018,7 +1195,6 @@ function initNavCharStagger() {
     });
   });
 }
-
 document.addEventListener('DOMContentLoaded', initNavCharStagger);
 
 
@@ -1099,154 +1275,6 @@ window.Webflow = window.Webflow || [];
 window.Webflow.push(initCSSMarquee);
 
 
-
-
-
-
-
-// OSMO Flip section on home
-gsap.registerPlugin(ScrollTrigger, Flip);
-
-function initFlipOnScroll() {
-  let wrapperElements = document.querySelectorAll("[data-flip-element='wrapper']");
-  let targetEl = document.querySelector("[data-flip-element='target']");
-
-  let tl;
-  function flipTimeline() {
-    if (tl) {
-      tl.kill();
-      gsap.set(targetEl, { clearProps: "all" });
-    }
-    
-    // Use the first and last wrapper elements for the scroll trigger.
-    tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: wrapperElements[0],
-        start: "center center",
-        endTrigger: wrapperElements[wrapperElements.length - 1],
-        end: "center center",
-        scrub: 0.25
-      }
-    });
-    
-    // Loop through each wrapper element.
-    wrapperElements.forEach(function(element, index) {
-      let nextIndex = index + 1;
-      if (nextIndex < wrapperElements.length) {
-        let nextWrapperEl = wrapperElements[nextIndex];
-        // Calculate vertical center positions relative to the document.
-        let nextRect = nextWrapperEl.getBoundingClientRect();
-        let thisRect = element.getBoundingClientRect();
-        let nextDistance = nextRect.top + window.pageYOffset + nextWrapperEl.offsetHeight / 2;
-        let thisDistance = thisRect.top + window.pageYOffset + element.offsetHeight / 2;
-        let offset = nextDistance - thisDistance;
-        // Add the Flip.fit tween to the timeline.
-        tl.add(
-          Flip.fit(targetEl, nextWrapperEl, {
-            duration: offset,
-            ease: "none"
-          })
-        );
-      }
-    });
-  }
-
-  flipTimeline();
-
-  let resizeTimer;
-  window.addEventListener("resize", function () {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () {
-      flipTimeline();
-    }, 100);
-  });
-}
-
-// Initialize Scaling Elements on Scroll (GSAP Flip)
-document.addEventListener('DOMContentLoaded', function() {
-  initFlipOnScroll();
-});
-
-
-
-// OSMO Trailing cursor
-function initRotatingImageTrail() {
-  var area = document.querySelector("[data-trail-area]");
-  if (!area) return;
-
-  var collection = area.querySelector("[data-trail-collection]");
-  if (!collection) return;
-
-  var items = collection.querySelectorAll("[data-trail-item]");
-  if (!items.length) return;
-
-  // Distance logic
-  var index = 0;
-  var lastCloneX = null;
-  var lastCloneY = null;
-
-  var cardWidth = items[0].getBoundingClientRect().width;
-  var stepDistance = cardWidth * 0.5;
-
-  function spawnTrailItem(x, y) {
-    var original = items[index];
-    var clone = original.cloneNode(true);
-
-    clone.style.left = x + "px";
-    clone.style.top = y + "px";
-
-    clone.setAttribute("data-trail-item", "hidden");
-
-    area.appendChild(clone);
-
-    void clone.getBoundingClientRect();
-
-    clone.setAttribute("data-trail-item", "visible");
-
-    setTimeout(function () {
-      clone.setAttribute("data-trail-item", "transition-out");
-    }, 400);
-
-    setTimeout(function () {
-      clone.remove();
-    }, 1200);
-
-    index = (index + 1) % items.length;
-    lastCloneX = x;
-    lastCloneY = y;
-  }
-
-  // Mouse movement logic
-  area.addEventListener("mousemove", function (event) {
-    var rect = area.getBoundingClientRect();
-    var x = event.clientX - rect.left;
-    var y = event.clientY - rect.top;
-
-    if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
-      lastCloneX = null;
-      lastCloneY = null;
-      return;
-    }
-
-    if (lastCloneX === null || lastCloneY === null) {
-      spawnTrailItem(x, y);
-      return;
-    }
-
-    var dx = x - lastCloneX;
-    var dy = y - lastCloneY;
-    var distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance >= stepDistance) {
-      spawnTrailItem(x, y);
-    }
-  });
-}
-
-// Initialize Rotating Image Trail
-document.addEventListener("DOMContentLoaded", function () {
-  initRotatingImageTrail();
-});
 
 
 // OSMO Custom form validation
@@ -1397,7 +1425,6 @@ function initBasicFormValidation() {
     });
   });
 }
-
 // Initialize Basic Form Validation
 document.addEventListener('DOMContentLoaded', () => {
   initBasicFormValidation();
@@ -1407,8 +1434,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// Contact Flyout — GSAP-driven panel. Open: [data-contact="open"]. Close: [data-contact="close"] or click [data-contact="overlay"] or Escape.
-// Structure: .contact-flyout_wrap (data-contact="wrapper") — flex layout, do not change. .contact-flyout_overlay (data-contact="overlay"). .contact-flyout_panel (data-contact="panel") slides 110% → 0% xPercent. Inside panel: [data-contact="header"], [data-contact="title"] (SplitText lines), [data-contact="links"], [data-contact="form"]
+// Contact Flyout
 window.Webflow ||= [];
 window.Webflow.push(function initContactFlyout() {
   const wrap = document.querySelector('.contact-flyout_wrap');
@@ -1703,187 +1729,10 @@ function initSideNavWipeEffect(){
     }
   });
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   initSideNavWipeEffect();
 });
 
-
-// Cases scroll section change BG color on scroll
-const overlay = document.querySelector("[data-overlay]")
-const wrap = document.querySelector("[data-overlay-wrap]")
-const sections = document.querySelectorAll("[data-overlay-color]")
-
-if (overlay && wrap && sections.length) {
-
-  // SHOW / HIDE OVERLAY
-  ScrollTrigger.create({
-    trigger: wrap,
-    start: "top top",
-    end: "bottom bottom",
-
-    onEnter: () => {
-      gsap.to(overlay, {
-        opacity: 1,
-        duration: 0.6,
-        ease: "power2.out"
-      })
-    },
-
-    onEnterBack: () => {
-      gsap.to(overlay, {
-        opacity: 1,
-        duration: 0.6,
-        ease: "power2.out"
-      })
-    },
-
-    onLeave: () => {
-      gsap.to(overlay, {
-        opacity: 0,
-        duration: 0.6,
-        ease: "power2.out"
-      })
-    },
-
-    onLeaveBack: () => {
-      gsap.to(overlay, {
-        opacity: 0,
-        duration: 0.6,
-        ease: "power2.out"
-      })
-    }
-  })
-
-  // CHANGE OVERLAY COLOR
-  sections.forEach((section) => {
-
-    ScrollTrigger.create({
-      trigger: section,
-      start: "top 60%",
-      end: "bottom 40%",
-
-      onEnter: () => {
-        gsap.to(overlay, {
-          backgroundColor: section.dataset.overlayColor,
-          duration: 0.4,
-          ease: "power2.out",
-          overwrite: "auto"
-        })
-      },
-
-      onEnterBack: () => {
-        gsap.to(overlay, {
-          backgroundColor: section.dataset.overlayColor,
-          duration: 0.4,
-          ease: "power2.out",
-          overwrite: "auto"
-        })
-      }
-    })
-  })
-}
-
-
-// HOME CASES TITLES ON SCROLL — adjust duration / ease on gsap.caseTitleScroll
-gsap.caseTitleScroll = {
-  duration: 0.4,
-  easeTitleIn: "power2.inOut",
-  easeTitleOut: "power2.inOut"
-};
-
-function initCaseScrollTitles() {
-  const titles = document.querySelectorAll("[data-title-inner]");
-  const sections = document.querySelectorAll("[data-case-trigger]");
-
-  if (!titles.length || !sections.length) return;
-
-  const { duration, easeTitleIn, easeTitleOut } = gsap.caseTitleScroll;
-
-  const tweenBase = {
-    duration,
-    stagger: { each: 0.015, from: "start" },
-    overwrite: "auto"
-  };
-
-  const titleIn = {
-    from: { yPercent: 110, opacity: 0 },
-    to: { yPercent: 0, opacity: 1, ease: easeTitleIn, ...tweenBase }
-  };
-
-  const titleOut = {
-    from: { yPercent: 0, opacity: 1 },
-    to: { yPercent: -110, opacity: 0, ease: easeTitleOut, ...tweenBase }
-  };
-
-  function getTitleForSection(section) {
-    return document.querySelector(
-      `[data-title-item="${section.dataset.caseTrigger}"] [data-title-inner]`
-    );
-  }
-
-  function animateTitle(title, { from, to }) {
-    if (!title?.splitChars) return;
-    gsap.killTweensOf(title.splitChars);
-    gsap.fromTo(title.splitChars, from, to);
-  }
-
-  titles.forEach((title) => {
-    const split = new SplitText(title, { type: "chars" });
-    title.splitChars = split.chars;
-    gsap.set(split.chars, { yPercent: 110, opacity: 0 });
-  });
-
-  sections.forEach((section, index) => {
-    const currentTitle = getTitleForSection(section);
-    if (!currentTitle) return;
-
-    const prevTitle = index > 0 ? getTitleForSection(sections[index - 1]) : null;
-
-    ScrollTrigger.create({
-      trigger: section,
-      start: "top 60%",
-      onEnter: () => {
-        if (prevTitle) animateTitle(prevTitle, titleOut);
-        animateTitle(currentTitle, titleIn);
-      },
-      onLeaveBack: () => {
-        animateTitle(currentTitle, titleOut);
-        if (prevTitle) animateTitle(prevTitle, titleIn);
-      }
-    });
-  });
-}
-
-document.addEventListener("DOMContentLoaded", initCaseScrollTitles);
-
-
-// HOME CASES TITLES FIT TO WIDTH
-// function fitTitles() {
-// 
-//   const titles = document.querySelectorAll("[data-title-inner]")
-// 
-//   titles.forEach((title) => {
-// 
-//     // RESET
-//     gsap.set(title, {
-//       fontSize: "15vw"
-//     })
-// 
-//     const targetWidth = window.innerWidth * 0.85
-//     const actualWidth = title.offsetWidth
-// 
-//     const scale = targetWidth / actualWidth
-// 
-//     gsap.set(title, {
-//       fontSize: `${15 * scale}vw`
-//     })
-//   })
-// }
-// 
-// fitTitles()
-//
-// window.addEventListener("resize", fitTitles)
 
 
 // ================================================================
