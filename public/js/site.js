@@ -41,6 +41,7 @@ function initOnceFunctions() {
   initCursorMarqueeEffect();
   initSideNavWipeEffect();
   initBasicFormValidation();
+  initcontactFlyout();
   
 
   // Runs once on first load
@@ -49,9 +50,10 @@ function initOnceFunctions() {
 
 function initBeforeEnterFunctions(next) {
   nextPage = next || document;
-  
-  // Runs before the enter animation
-  // if (has('[data-something]')) initSomething();
+
+  // Runs before the enter animation — set the incoming page's intro "from"
+  // states now, while the container is still autoAlpha:0, so nothing flashes.
+  setNamespaceIntroInitial(next);
 }
 
 function initAfterEnterFunctions(next) {
@@ -81,56 +83,138 @@ function initAfterEnterFunctions(next) {
 // PAGE TRANSITIONS
 // -----------------------------------------
 
-function runPageOnceAnimation(next) {
+const TRANSITION = {
+  panel: "[data-transition-panel]",
+  scale: "[data-page-scale]",
+  dur: 0.9,             // wipe duration
+  ease: "power3.inOut", // ≈ cubic-bezier(0.65, 0, 0.35, 1)
+  scaleTo: 0.94,        // outgoing page recede
+  scaleOffset: 0.05,    // recede starts this long after the panel
+  cutAt: 0.82,          // new page hard-cuts in here, while the panel covers
+};
+
+function getPanel() {
+  return document.querySelector(TRANSITION.panel);
+}
+
+function runPageOnceAnimation(next, namespace) {
+  // First load only fires beforeOnce/once/afterOnce — no enter hooks — so the
+  // page-specific inits have to be kicked off here too.
   const tl = gsap.timeline();
 
-  tl.call(() => {
-    resetPage(next)
-  }, null, 0);
+  tl.call(() => resetPage(next), null, 0);
+  tl.call(() => initAfterEnterFunctions(next), null, 0);
+  tl.set(next, { autoAlpha: 1 }, 0);
+  tl.set(getPanel(), { yPercent: 100 }, 0);
+  // First-load intro is intentionally minimal for now (custom one comes later).
+  tl.call(() => runNamespaceIntro(namespace, next), null, 0);
 
   return tl;
 }
 
 function runPageLeaveAnimation(current, next) {
-  const tl = gsap.timeline({
-    onComplete: () => { current.remove() }
-  });
-  
+  const panel = getPanel();
+  const scaleEl = current.querySelector(TRANSITION.scale) || current;
+  const tl = gsap.timeline({ onComplete: () => current.remove() });
+
   if (reducedMotion) {
-    // Immediate swap behavior if user prefers reduced motion
     return tl.set(current, { autoAlpha: 0 });
   }
 
-  tl.to(current, { autoAlpha: 0, duration: 0.4 });
+  // Pivot the recede around the viewport centre regardless of scroll position.
+  const rect = scaleEl.getBoundingClientRect();
+  const originY = -rect.top + window.innerHeight / 2;
+  gsap.set(scaleEl, { transformOrigin: `50% ${originY}px` });
+
+  tl.set(panel, { yPercent: 100 }, 0);
+  tl.to(panel, { yPercent: 0, duration: TRANSITION.dur, ease: TRANSITION.ease }, 0);
+  tl.to(
+    scaleEl,
+    { scale: TRANSITION.scaleTo, duration: TRANSITION.dur, ease: TRANSITION.ease },
+    TRANSITION.scaleOffset
+  );
 
   return tl;
 }
 
-function runPageEnterAnimation(next){
+function runPageEnterAnimation(next, namespace) {
+  const panel = getPanel();
+  const scaleEl = next.querySelector(TRANSITION.scale) || next;
   const tl = gsap.timeline();
-  
+
   if (reducedMotion) {
-    // Immediate swap behavior if user prefers reduced motion
+    tl.set(scaleEl, { scale: 1, clearProps: "scale,transformOrigin" });
     tl.set(next, { autoAlpha: 1 });
-    tl.add("pageReady")
-    tl.call(resetPage, [next], "pageReady");
-    return new Promise(resolve => tl.call(resolve, null, "pageReady"));
+    tl.set(panel, { yPercent: 100 });
+    tl.call(resetPage, [next]);
+    tl.add("pageReady");
+    tl.call(() => runNamespaceIntro(namespace, next), null, "pageReady");
+    return new Promise((resolve) => tl.call(resolve, null, "pageReady"));
   }
-  
-  tl.add("startEnter", 0.6);
-  
-  tl.fromTo(next, {
-    autoAlpha: 0,
-  },{
-    autoAlpha: 1,
-  }, "startEnter");
 
-  tl.add("pageReady");
+  // Hard-cut the incoming page in while the panel is covering the viewport.
+  tl.add("covered", TRANSITION.cutAt);
+  tl.set(scaleEl, { scale: 1, clearProps: "scale,transformOrigin" }, "covered");
+  tl.set(next, { autoAlpha: 1 }, "covered");
+  tl.call(() => window.scrollTo(0, 0), null, "covered");
+  tl.set(panel, { yPercent: 100 }, "covered"); // park below — same colour, invisible
+
+  tl.add("pageReady", "covered+=0.01");
   tl.call(resetPage, [next], "pageReady");
+  tl.call(() => runNamespaceIntro(namespace, next), null, "pageReady");
 
-  return new Promise(resolve => {
-    tl.call(resolve, null, "pageReady");
-  });
+  // Resolve the transition now; the namespace intro plays on independently.
+  return new Promise((resolve) => tl.call(resolve, null, "pageReady"));
+}
+
+
+// -----------------------------------------
+// PAGE INTRO ANIMATIONS (per namespace)
+// -----------------------------------------
+
+// Hidden "from" states — set from initBeforeEnterFunctions while the container
+// is still autoAlpha:0, so nothing flashes before the wipe uncovers the page.
+function setNamespaceIntroInitial(container) {
+  if (!container || reducedMotion) return;
+  gsap.set(container.querySelectorAll('[data-intro="fade-up"]'), { autoAlpha: 0, y: 24 });
+  gsap.set(container.querySelectorAll('[data-intro="mask-line"]'), { yPercent: 110 });
+}
+
+function runNamespaceIntro(namespace, container) {
+  const tl = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.8 } });
+  if (!container || reducedMotion) return tl;
+
+  switch (namespace) {
+    case "home":
+      return introHome(container, tl);
+    case "about":
+      return introAbout(container, tl);
+    case "case":
+      return introCase(container, tl);
+    default:
+      return tl;
+  }
+}
+
+function introHome(container, tl) {
+  // TODO: real home reveal
+  tl.to(container.querySelectorAll('[data-intro="mask-line"]'), { yPercent: 0, stagger: 0.06 }, 0);
+  tl.to(container.querySelectorAll('[data-intro="fade-up"]'), { autoAlpha: 1, y: 0, stagger: 0.08 }, 0.1);
+  return tl;
+}
+
+function introAbout(container, tl) {
+  // TODO: real about reveal
+  tl.to(container.querySelectorAll('[data-intro="mask-line"]'), { yPercent: 0, stagger: 0.06 }, 0);
+  tl.to(container.querySelectorAll('[data-intro="fade-up"]'), { autoAlpha: 1, y: 0, stagger: 0.08 }, 0.1);
+  return tl;
+}
+
+function introCase(container, tl) {
+  // TODO: real case reveal
+  tl.to(container.querySelectorAll('[data-intro="mask-line"]'), { yPercent: 0, stagger: 0.06 }, 0);
+  tl.to(container.querySelectorAll('[data-intro="fade-up"]'), { autoAlpha: 1, y: 0, stagger: 0.08 }, 0.1);
+  return tl;
 }
 
 
@@ -139,18 +223,20 @@ function runPageEnterAnimation(next){
 // -----------------------------------------
 
 barba.hooks.beforeEnter(data => {
-  // Position new container on top
+  // Position new container on top, hidden until the wipe covers the screen
   gsap.set(data.next.container, {
     position: "fixed",
     top: 0,
     left: 0,
     right: 0,
+    autoAlpha: 0,
   });
-  
+  gsap.set("[data-transition-panel]", { yPercent: 100 });
+
   if (lenis && typeof lenis.stop === "function") {
     lenis.stop();
   }
-  
+
   initBeforeEnterFunctions(data.next.container);
   applyThemeFrom(data.next.container);
 });
@@ -192,8 +278,10 @@ barba.init({
       // First load
       async once(data) {
         initOnceFunctions();
+        initBeforeEnterFunctions(data.next.container);
+        applyThemeFrom(data.next.container);
 
-        return runPageOnceAnimation(data.next.container);
+        return runPageOnceAnimation(data.next.container, data.next.namespace);
       },
 
       // Current page leaves
@@ -203,7 +291,7 @@ barba.init({
 
       // New page enters
       async enter(data) {
-        return runPageEnterAnimation(data.next.container);
+        return runPageEnterAnimation(data.next.container, data.next.namespace);
       }
     }
   ],
@@ -315,6 +403,11 @@ function initBarbaNavUpdate(data) {
 // -----------------------------------------
 // YOUR FUNCTIONS GO BELOW HERE
 // -----------------------------------------
+
+
+
+
+
 
 // GSAP plugins used across this file (the boilerplate only registers CustomEase).
 // Runs at parse time, before any init* / Barba hook fires.

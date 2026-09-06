@@ -334,3 +334,26 @@
 }
 
 
+/* ================================================================
+   BARBA PAGE TRANSITION — "House of Gucci" wipe
+   Panel [data-transition-panel] lives outside [data-barba="wrapper"]
+   and is coloured (white, == .page-scale bg) in Webflow. Body is
+   #151515 so the receding .page-scale drops into a dark frame.
+   ================================================================ */
+[data-transition-panel] {
+  position: fixed;
+  inset: 0;
+  z-index: 300;                 /* below the nav for now */
+  transform: translateY(100%);  /* parked below the fold; GSAP owns it after first set */
+  pointer-events: none;
+  will-change: transform;
+}
+
+[data-page-scale] {
+  transform-origin: 50% 50%;    /* JS overrides to viewport-centre on leave */
+  will-change: transform;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+
