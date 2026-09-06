@@ -37,6 +37,12 @@ function initOnceFunctions() {
   if (onceFunctionsInitialized) return;
   onceFunctionsInitialized = true;
   
+  initNavCharStagger();
+  initCursorMarqueeEffect();
+  initSideNavWipeEffect();
+  initBasicFormValidation();
+  
+
   // Runs once on first load
   // if (has('[data-something]')) initSomething();
 }
@@ -50,11 +56,16 @@ function initBeforeEnterFunctions(next) {
 
 function initAfterEnterFunctions(next) {
   nextPage = next || document;
-  
-  // Runs after enter animation completes
-  // if (has('[data-something]')) initSomething();
-  
-  
+
+  // Runs after enter animation completes — page-specific, gated on the
+  // incoming container so each only runs on pages that actually use it.
+  if (has('[data-parallax="trigger"]')) initGlobalParallax();
+  if (has('[data-footer-parallax]')) initFooterParallax();
+  if (has('[data-bunny-background-init]')) initBunnyPlayerBackground();
+  if (has('[data-css-marquee]')) initCSSMarquee();
+  if (has('.slider')) initHomeSlider();
+
+
   if(hasLenis){
     lenis.resize();
   }
@@ -305,74 +316,611 @@ function initBarbaNavUpdate(data) {
 // YOUR FUNCTIONS GO BELOW HERE
 // -----------------------------------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Ensure Webflow & DOM are ready
+// GSAP plugins used across this file (the boilerplate only registers CustomEase).
+// Runs at parse time, before any init* / Barba hook fires.
 window.Webflow ||= [];
-window.Webflow.push(() => {
-  document.body.classList.add("wf-custom");
-});
-
-
 gsap.registerPlugin(ScrollTrigger, SplitText);
-gsap.registerPlugin(ScrambleTextPlugin);
-gsap.registerPlugin(InertiaPlugin);
 
-// Initialize Lenis smooth scrolling — skipped on pages with the infinite
-// slider (.slider): Lenis's own wheel/touch hijacking fights the slider's
-// own drag/wheel handling, and those pages have no vertical scroll to
-// smooth anyway. See docs/WEBFLOW-INFINITE-SLIDER-STRUCTURE.md.
-const hasInfiniteSlider = !!document.querySelector(".slider");
-const lenis = hasInfiniteSlider ? null : new Lenis();
-window.lenis = lenis; // Expose for Webflow page embed (home scroll lock)
 
-window.addEventListener('pageshow', function () {
-  lenis?.scrollTo(0, { immediate: true });
+
+// -----------------------------------------
+// GLOBAL FUNCTIONS
+// -----------------------------------------
+
+
+// Nav text-link stagger
+function initNavCharStagger() {
+  const triggers = document.querySelectorAll('[data-nav-stagger]');
+
+  triggers.forEach(trigger => {
+    if (trigger.dataset.splitInit) return;
+
+    let target = trigger.querySelector('[data-nav-stagger-target]');
+    if (!target) {
+      if (trigger.matches('a')) {
+        target = trigger;
+      } else {
+        target = trigger.querySelector('a') || trigger.firstElementChild;
+      }
+    }
+    if (!target) return;
+
+    trigger.dataset.splitInit = 'true';
+
+    const split = new SplitText(target, {
+      type: 'chars',
+      charsClass: 'char'
+    });
+
+    gsap.set(split.chars, {
+      yPercent: 0
+    });
+
+    let enterTween = null;
+    let leaveTween = null;
+    let leaveQueued = false;
+
+    const runLeave = () => {
+      leaveQueued = false;
+      if (leaveTween) leaveTween.kill();
+      leaveTween = gsap.to(split.chars, {
+        yPercent: 0,
+        duration: 0.3,
+        ease: 'power4.out',
+        stagger: {
+          each: 0.01
+        },
+        onComplete: () => {
+          leaveTween = null;
+        }
+      });
+    };
+
+    trigger.addEventListener('mouseenter', () => {
+      leaveQueued = false;
+      if (leaveTween) {
+        leaveTween.kill();
+        leaveTween = null;
+      }
+      if (enterTween) enterTween.kill();
+      enterTween = gsap.to(split.chars, {
+        yPercent: -100,
+        duration: 0.3,
+        ease: 'power4.out',
+        stagger: {
+          each: 0.01
+        },
+        onComplete: () => {
+          enterTween = null;
+          if (leaveQueued) runLeave();
+        }
+      });
+    });
+
+    trigger.addEventListener('mouseleave', () => {
+      leaveQueued = true;
+      if (!enterTween) {
+        runLeave();
+      }
+    });
+  });
+}
+
+// OSMO marquee cursor
+function initCursorMarqueeEffect() {
+  const hoverOutDelay = 0.4;
+  const followDuration = 0.8;
+  const speedMultiplier = 5;
+
+  const cursor = document.querySelector('[data-cursor-marquee-status]');
+  if (!cursor) return;
+  const targets = cursor.querySelectorAll('[data-cursor-marquee-text-target]');
+
+  const xTo = gsap.quickTo(cursor, 'x', { duration: followDuration, ease: 'power3' });
+  const yTo = gsap.quickTo(cursor, 'y', { duration: followDuration, ease: 'power3' });
+
+  let pauseTimeout = null;
+  let activeEl = null;
+  let lastX = 0;
+  let lastY = 0;
+
+  function playFor(el) {
+    if (!el) return;
+    if (pauseTimeout) clearTimeout(pauseTimeout);
+    const text = el.getAttribute('data-cursor-marquee-text') || '';
+    const sec = (text.length || 1) / speedMultiplier;
+    targets.forEach(t => {
+      t.textContent = text;
+      t.style.animationPlayState = 'running';
+      t.style.animationDuration = sec + 's';
+    });
+    cursor.setAttribute('data-cursor-marquee-status', 'active');
+    activeEl = el;
+  }
+
+  function pauseLater() {
+    cursor.setAttribute('data-cursor-marquee-status', 'not-active');
+    if (pauseTimeout) clearTimeout(pauseTimeout);
+    pauseTimeout = setTimeout(() => {
+      targets.forEach(t => {
+        t.style.animationPlayState = 'paused';
+      });
+    }, hoverOutDelay * 1000);
+    activeEl = null;
+  }
+
+  function checkTarget() {
+    const el = document.elementFromPoint(lastX, lastY);
+    const hit = el && el.closest('[data-cursor-marquee-text]');
+    if (hit !== activeEl) {
+      if (activeEl) pauseLater();
+      if (hit) playFor(hit);
+    }
+  }
+
+  window.addEventListener('pointermove', e => {
+    lastX = e.clientX;
+    lastY = e.clientY;
+    xTo(lastX);
+    yTo(lastY);
+    checkTarget();
+  }, { passive: true });
+
+  window.addEventListener('scroll', () => {
+    xTo(lastX);
+    yTo(lastY);
+    checkTarget();
+  }, { passive: true });
+
+  setTimeout(() => {
+    cursor.setAttribute('data-cursor-marquee-status', 'not-active');
+  }, 500);
+}
+
+// OSMO Nav flyout
+CustomEase.create("main", "0.65, 0.01, 0.05, 0.99");
+function initSideNavWipeEffect(){
+
+  let navWrap = document.querySelector("[data-sidenav-wrap]");
+  let state = navWrap.getAttribute("data-nav-state");
+  let overlay = navWrap.querySelector("[data-sidenav-overlay]");
+  let menu = navWrap.querySelector("[data-sidenav-menu]");
+  let bgPanels = navWrap.querySelectorAll("[data-sidenav-panel]");
+  let menuToggles = document.querySelectorAll("[data-sidenav-toggle]");
+  let menuLinks = navWrap.querySelectorAll("[data-sidenav-link]");
+  let fadeTargets = navWrap.querySelectorAll("[data-sidenav-fade]");
+  let menuButton = document.querySelector("[data-sidenav-button]");
+  let menuButtonTexts = menuButton.querySelectorAll("[data-sidenav-label]");
+  let menuButtonIcon = menuButton.querySelector("[data-sidenav-icon]");
+
+  let tl = gsap.timeline()
+  
+  const openNav = () =>{
+    navWrap.setAttribute("data-nav-state", "open");
+    
+    tl.clear()
+    .set(navWrap,{display:"block"})
+    .set(menu,{xPercent:0},"<")
+    .fromTo(menuButtonTexts,{yPercent:0},{yPercent:-100,stagger:0.2})
+    .fromTo(menuButtonIcon,{rotate:0},{rotate:315},"<")
+    .fromTo(overlay,{autoAlpha:0},{autoAlpha:1},"<")
+    .fromTo(bgPanels,{xPercent:101},{xPercent:0,stagger:0.12,duration: 0.575},"<")
+    .fromTo(menuLinks,{yPercent:150,rotate:10},{yPercent:0, rotate:0,stagger:0.05},"<+=0.35")
+    .fromTo(fadeTargets,{autoAlpha:0,yPercent:50},{autoAlpha:1, yPercent:0,stagger:0.04},"<+=0.2");
+  }
+  
+  const closeNav = () =>{
+    navWrap.setAttribute("data-nav-state", "closed");
+    
+    tl.clear()
+    .to(overlay,{autoAlpha:0})
+    .to(menu,{xPercent:120},"<")
+    .to(menuButtonTexts,{yPercent:0},"<")
+    .to(menuButtonIcon,{rotate:0},"<")
+    .set(navWrap,{display:"none"});
+  }  
+  
+  // Toggle menu open / close depending on its current state
+  menuToggles.forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      state = navWrap.getAttribute("data-nav-state");
+      if (state === "open") {
+        closeNav();
+      } else {
+        openNav();
+      }
+    });    
+  });
+  
+  // If menu is open, you can close it using the "escape" key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && navWrap.getAttribute("data-nav-state") === "open") {
+      closeNav();
+    }
+  });
+}
+
+// Contact Flyout
+window.Webflow ||= [];
+window.Webflow.push(function initContactFlyout() {
+  const wrap = document.querySelector('.contact-flyout_wrap');
+  if (!wrap) return;
+
+  const overlay = wrap.querySelector('[data-contact="overlay"]');
+  const panel = wrap.querySelector('[data-contact="panel"]') || wrap.querySelector('.contact-flyout_panel') || wrap.querySelector('.contact-flyout') || wrap.firstElementChild;
+  const openTriggers = document.querySelectorAll('[data-contact="open"]');
+  const closeTriggers = wrap.querySelectorAll('[data-contact="close"]');
+
+  // Panel inner elements (optional)
+  const headerEl = panel?.querySelector('[data-contact="header"]');
+  const titleEl = panel?.querySelector('[data-contact="title"]');
+  const linksEl = panel?.querySelector('[data-contact="links"]');
+  const formEl = panel?.querySelector('[data-contact="form"]');
+
+  const state = { isOpen: false };
+  let titleSplit = null; // SplitText instance for cleanup
+
+  // Initial state: wrap pointer-events only (do not touch flex/layout), overlay 0%, panel at 110% xPercent, inner elements at "from" values
+  // Wrap is made visible by JS on open; keep opacity 0 and pointer-events none until then so it doesn't show or block
+  gsap.set(wrap, {
+    visibility: 'visible',
+    opacity: 0,
+    pointerEvents: 'none',
+  });
+  if (overlay) gsap.set(overlay, { opacity: 0, pointerEvents: 'none' });
+  gsap.set(panel, { xPercent: 110 });
+
+  // Header: from yPercent 150, opacity 0
+  if (headerEl) gsap.set(headerEl, { yPercent: 150, opacity: 0 });
+  // Title: split by lines, overflow hidden, from yPercent 110, opacity 0
+  if (titleEl && typeof SplitText !== 'undefined') {
+    titleEl.style.overflow = 'hidden';
+    titleSplit = new SplitText(titleEl, { type: 'lines' });
+    gsap.set(titleSplit.lines, { yPercent: 110, opacity: 0 });
+  } else if (titleEl) {
+    gsap.set(titleEl, { yPercent: 110, opacity: 0 });
+  }
+  // Links: from yPercent 150, opacity 0
+  if (linksEl) gsap.set(linksEl, { yPercent: 150, opacity: 0 });
+  // Form: all children from yPercent 150, opacity 0
+  if (formEl) gsap.set(formEl.children, { yPercent: 150, opacity: 0 });
+
+  // Open timeline
+  const innerStart = 0.2;
+  const flyoutTl = gsap.timeline({ paused: true });
+  // data-contact="overlay"
+  if (overlay) flyoutTl.to(overlay, {
+    opacity: 0.6,
+    duration: 0.2,
+    ease: 'linear',
+  }, 0);
+  // data-contact="panel" (.contact-flyout_panel) 110% → 0%
+  flyoutTl.to(panel, {
+    xPercent: 0,
+    duration: 0.5,
+    ease: 'power4.inOut',
+  }, 0);
+  // data-contact="header"
+  if (headerEl) flyoutTl.to(headerEl, {
+    yPercent: 0,
+    opacity: 1,
+    duration: 0.6,
+    ease: 'power4.out',
+  }, innerStart);
+  // data-contact="title" (split by lines)
+  if (titleEl) {
+    if (titleSplit?.lines) {
+      flyoutTl.to(titleSplit.lines, {
+        yPercent: 0,
+        opacity: 1,
+        duration: 0.5,
+        ease: 'power4.out',
+        stagger: 0.05,
+      }, innerStart + 0.1);
+    } else {
+      flyoutTl.to(titleEl, {
+        yPercent: 0,
+        opacity: 1,
+        duration: 0.5,
+        ease: 'power4.out',
+      }, innerStart);
+    }
+  }
+  // data-contact="links"
+  if (linksEl) flyoutTl.to(linksEl, {
+    yPercent: 0,
+    opacity: 1,
+    duration: 0.5,
+    ease: 'power4.out',
+  }, innerStart + 0.2);
+  // data-contact="form" (children)
+  if (formEl && formEl.children.length) {
+    flyoutTl.to(formEl.children, {
+      yPercent: 0,
+      opacity: 1,
+      duration: 0.5,
+      ease: 'power4.out',
+      stagger: 0.03,
+    }, innerStart + 0.3);
+  }
+
+  function open() {
+    if (state.isOpen) return;
+    state.isOpen = true;
+    // if (window.lenis) window.lenis.stop();
+    wrap.setAttribute('aria-hidden', 'false');
+
+    gsap.set(wrap, { visibility: 'visible', opacity: 1, pointerEvents: 'auto' });
+    if (overlay) gsap.set(overlay, { pointerEvents: 'auto' });
+
+    flyoutTl.reversed(false);
+    flyoutTl.timeScale(1);
+    flyoutTl.progress(0);
+    flyoutTl.play();
+  }
+
+  function close() {
+    if (!state.isOpen) return;
+    state.isOpen = false;
+    flyoutTl.pause();
+
+    const closeDuration = 0.35;
+    const closeEase = 'power3.in';
+    const closeTl = gsap.timeline({
+      onComplete: () => {
+        gsap.set(wrap, { pointerEvents: 'none', opacity: 0 });
+        if (overlay) gsap.set(overlay, { pointerEvents: 'none' });
+        wrap.setAttribute('aria-hidden', 'true');
+        // if (window.lenis) window.lenis.start();
+      },
+    });
+
+    // data-contact="header"
+    if (headerEl) closeTl.to(headerEl, {
+      yPercent: 150,
+      opacity: 0,
+      duration: closeDuration * 0.6,
+      ease: closeEase,
+    }, 0);
+    // data-contact="title" (split by lines)
+    if (titleEl) {
+      if (titleSplit?.lines) {
+        closeTl.to(titleSplit.lines, {
+          yPercent: 110,
+          opacity: 0,
+          duration: closeDuration * 0.6,
+          ease: closeEase,
+          stagger: 0.02,
+        }, 0);
+      } else {
+        closeTl.to(titleEl, {
+          yPercent: 110,
+          opacity: 0,
+          duration: closeDuration * 0.6,
+          ease: closeEase,
+        }, 0);
+      }
+    }
+    // data-contact="links"
+    if (linksEl) closeTl.to(linksEl, {
+      yPercent: 150,
+      opacity: 0,
+      duration: closeDuration * 0.6,
+      ease: closeEase,
+    }, 0);
+    // data-contact="form" (children)
+    if (formEl && formEl.children.length) {
+      closeTl.to(formEl.children, {
+        yPercent: 150,
+        opacity: 0,
+        duration: closeDuration * 0.6,
+        ease: closeEase,
+        stagger: 0.015,
+      }, 0);
+    }
+    // data-contact="panel" (.contact-flyout_panel) 0% → 110%
+    closeTl.to(panel, {
+      xPercent: 110,
+      duration: closeDuration * 1.2,
+      ease: closeEase,
+    }, closeDuration * 0.1);
+    // data-contact="overlay" — longer, softer fade to avoid abrupt flash
+    if (overlay) closeTl.to(overlay, {
+      opacity: 0,
+      duration: 0.5,
+      ease: 'linear',
+    }, closeDuration * 0.1);
+  }
+
+  openTriggers.forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      open();
+    });
+  });
+
+  closeTriggers.forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      close();
+    });
+  });
+
+  // Close: overlay click, or click outside panel
+  if (overlay) {
+    overlay.addEventListener('click', close);
+  } else {
+    wrap.addEventListener('click', (e) => {
+      if (!panel.contains(e.target)) close();
+    });
+  }
+  panel.addEventListener('click', (e) => e.stopPropagation());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.isOpen) close();
+  });
+
+  wrap.setAttribute('aria-hidden', 'true');
 });
 
-// Synchronize Lenis scrolling with GSAP's ScrollTrigger plugin
-lenis?.on('scroll', ScrollTrigger.update);
 
-// Add Lenis's requestAnimationFrame (raf) method to GSAP's ticker
-// This ensures Lenis's smooth scroll animation updates on each GSAP tick
-gsap.ticker.add((time) => {
-  lenis?.raf(time * 1000); // Convert time from seconds to milliseconds
-});
+// OSMO Custom form validation
+function initBasicFormValidation() {
+  const formElements = document.querySelectorAll('form[data-form-validate]');
 
-// Disable lag smoothing in GSAP to prevent any delay in scroll animations
-gsap.ticker.lagSmoothing(0);
+  formElements.forEach((form) => {
+    const fields = form.querySelectorAll('[data-validate] input, [data-validate] textarea');
+    const submitButtonDiv = form.querySelector('[data-submit]'); // The div wrapping the submit button
+    // Support both <input type="submit"> and <button type="submit"> (Webflow often uses button)
+    const submitInput =
+      (submitButtonDiv && submitButtonDiv.querySelector('input[type="submit"], button[type="submit"]')) ||
+      form.querySelector('input[type="submit"], button[type="submit"]');
+
+    if (!submitInput) return; // No submit control found, skip this form
+
+    // Capture the form load time
+    const formLoadTime = new Date().getTime(); // Timestamp when the form was loaded
+
+    // Function to validate individual fields (input or textarea)
+    const validateField = (field) => {
+      const parent = field.closest('[data-validate]'); // Get the parent div
+      if (!parent) return true;
+      const minLength = field.getAttribute('min');
+      const maxLength = field.getAttribute('max');
+      const type = field.getAttribute('type');
+      let isValid = true;
+
+      // Check if the field has content
+      if (field.value.trim() !== '') {
+        parent.classList.add('is--filled');
+      } else {
+        parent.classList.remove('is--filled');
+      }
+
+      // Validation logic for min and max length
+      if (minLength && field.value.length < minLength) {
+        isValid = false;
+      }
+
+      if (maxLength && field.value.length > maxLength) {
+        isValid = false;
+      }
+
+      // Validation logic for email input type
+      if (type === 'email' && field.value.trim() !== '' && !/\S+@\S+\.\S+/.test(field.value)) {
+        isValid = false;
+      }
+
+      // Add or remove success/error classes on the parent div
+      if (isValid) {
+        parent.classList.remove('is--error');
+        parent.classList.add('is--success');
+      } else {
+        parent.classList.remove('is--success');
+        parent.classList.add('is--error');
+      }
+
+      return isValid;
+    };
+
+    // Function to start live validation for a field
+    const startLiveValidation = (field) => {
+      field.addEventListener('input', function () {
+        validateField(field);
+      });
+    };
+
+    // Function to validate and start live validation for all fields, focusing on the first field with an error
+    const validateAndStartLiveValidationForAll = () => {
+      let allValid = true;
+      let firstInvalidField = null;
+
+      fields.forEach((field) => {
+        const valid = validateField(field);
+        if (!valid && !firstInvalidField) {
+          firstInvalidField = field; // Track the first invalid field
+        }
+        if (!valid) {
+          allValid = false;
+        }
+        startLiveValidation(field); // Start live validation for all fields
+      });
+
+      // If there is an invalid field, focus on the first one
+      if (firstInvalidField) {
+        firstInvalidField.focus();
+      }
+
+      return allValid;
+    };
+
+    // Anti-spam: Check if form was filled too quickly
+    const isSpam = () => {
+      const currentTime = new Date().getTime();
+      const timeDifference = (currentTime - formLoadTime) / 1000; // Convert milliseconds to seconds
+      return timeDifference < 5; // Return true if form is filled within 5 seconds
+    };
+
+    let allowSubmit = false;
+
+    const trySubmit = () => {
+      if (validateAndStartLiveValidationForAll()) {
+        if (isSpam()) {
+          alert('Form submitted too quickly. Please try again.');
+          return;
+        }
+        allowSubmit = true;
+        if (typeof form.requestSubmit === 'function') {
+          form.requestSubmit();
+        } else {
+          form.submit();
+        }
+      }
+    };
+
+    // Intercept form submit so validation runs before Webflow/native submit
+    form.addEventListener('submit', function (event) {
+      if (!allowSubmit) {
+        event.preventDefault();
+        trySubmit();
+      } else {
+        allowSubmit = false;
+      }
+    });
+
+    // Click on the [data-submit] wrapper (e.g. div with "Submit" text) — the real input is often hidden in Webflow
+    if (submitButtonDiv) {
+      submitButtonDiv.addEventListener('click', function (e) {
+        e.preventDefault();
+        trySubmit();
+      });
+      // Allow Enter on the wrapper if it has tabindex (keyboard submit)
+      submitButtonDiv.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          trySubmit();
+        }
+      });
+    }
+
+    // Handle pressing the "Enter" key
+    form.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
+        event.preventDefault(); // Prevent the default form submission
+        trySubmit();
+      }
+    });
+  });
+}
 
 
 
+// -----------------------------------------
+// PAGE SPECIFIC FUNCTIONS
+// -----------------------------------------
 
 
 //OSMO Global Parallax
-
 function initGlobalParallax() {
   const mm = gsap.matchMedia()
 
@@ -447,308 +995,7 @@ function initGlobalParallax() {
   )
 }
 
-// Initialize Global Parallax Setup (run now if DOM already ready, e.g. script at end of body).
-// If you animate parallax triggers into view on page load (e.g. from -yPercent), either:
-// 1) Call ScrollTrigger.refresh() in the onComplete of that entrance so trigger positions are recalculated, or
-// 2) Set window.__PARALLAX_DEFER_INIT__ = true before this script runs, then call initGlobalParallax() (and ScrollTrigger.refresh()) when the entrance finishes.
-if (!window.__PARALLAX_DEFER_INIT__) {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initGlobalParallax)
-  } else {
-    initGlobalParallax()
-  }
-}
-
-
-
-
-
-
-
-
-//Case card hover GPT
-document.querySelectorAll(".home_case_card").forEach((wrap) => {
-  const imgClip = wrap.querySelector(".case_media_parallax");
-  const textBlocks = wrap.querySelectorAll(".case_text");
-
-  // Check if this card has the required data attributes
-  const hasScaleDown = wrap.hasAttribute('data-scale-down');
-  const hasScaleUp = imgClip && imgClip.hasAttribute('data-scale-up');
-  const hasTextIn = wrap.hasAttribute('data-text-in');
-
-  // Only proceed if at least one animation is enabled
-  if (!hasScaleDown && !hasScaleUp && !hasTextIn) return;
-
-  let splitTexts = [];
-  
-  // Only create SplitText if text animation is enabled
-  if (hasTextIn && textBlocks.length) {
-    splitTexts = Array.from(textBlocks).map(el => new SplitText(el, { type: "chars" }));
-
-    // Immediately hide all split characters on page load
-    splitTexts.forEach(split => {
-      gsap.set(split.chars, {
-        y: 20,
-        opacity: 0
-      });
-    });
-  }
-
-  let enterTweens = [];
-  let leaveTweens = [];
-
-  wrap.addEventListener("mouseenter", () => {
-    // Kill any leave tweens still running
-    leaveTweens.forEach(t => t.kill());
-    leaveTweens = [];
-
-    // Scale down animation (if enabled)
-    if (hasScaleDown) {
-      enterTweens.push(
-        gsap.to(wrap, {
-          scale: 0.98,
-          duration: 0.4,
-          ease: "power3.out"
-        })
-      );
-    }
-
-    // Scale up animation (if enabled)
-    if (hasScaleUp && imgClip) {
-      enterTweens.push(
-        gsap.to(imgClip, {
-          scale: 1.10,
-          duration: 1.4,
-          ease: "power3.out"
-        })
-      );
-    }
-
-    // Text animation (if enabled)
-    if (hasTextIn && splitTexts.length) {
-      splitTexts.forEach((split, i) => {
-        const tween = gsap.fromTo(split.chars, { y: 20, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.4,
-          ease: "power2.out",
-          stagger: 0.03,
-          delay: i * 0.15
-        });
-        enterTweens.push(tween);
-      });
-    }
-  });
-
-  wrap.addEventListener("mouseleave", () => {
-    // Kill enter tweens so they don't conflict
-    enterTweens.forEach(t => t.kill());
-    enterTweens = [];
-
-    // Scale down animation reset (if enabled)
-    if (hasScaleDown) {
-      leaveTweens.push(
-        gsap.to(wrap, {
-          scale: 1,
-          duration: 0.5,
-          ease: "power2.inOut"
-        })
-      );
-    }
-
-    // Scale up animation reset (if enabled)
-    if (hasScaleUp && imgClip) {
-      leaveTweens.push(
-        gsap.to(imgClip, {
-          scale: 1,
-          duration: 0.7,
-          ease: "power2.inOut"
-        })
-      );
-    }
-
-    // Text animation reset (if enabled)
-    if (hasTextIn && splitTexts.length) {
-      splitTexts.forEach((split, i) => {
-        const tween = gsap.to(split.chars,
-        {
-          y: 20,
-          opacity: 0,
-          duration: 0.2,
-          ease: "power4.out",
-          stagger: 0.015,
-          delay: i * 0.05
-        });
-        leaveTweens.push(tween);
-      });
-    }
-  });
-});
-
-
-
-// Footer animation GPT
-
-const tl = gsap.timeline({
-  scrollTrigger: {
-    trigger: ".case_contain",
-    start: "bottom center",
-    end: "bottom top",
-    scrub: true
-  }
-});
-
-tl.from(".footer_above_wrap", {
-  yPercent: 0,
-  scale: 0.9,
-  opacity: 0,
-  ease: "none"
-}, 0); // start at 0
-
-tl.from(".footer_below_wrap", {
-  yPercent: 50,
-  opacity: 0,
-  ease: "none"
-}, 0); // also start at 0 — plays at same time
-
-// –––––––– NAV LINKS STAGGER ILJA
-
-// Create a reference for all SplitText instances
-let splitTextMap = new Map();
-
-function setupSplits() {
-  // Clear and revert previous
-  splitTextMap.forEach(instance => instance.revert());
-  splitTextMap.clear();
-
-  document.querySelectorAll("[stagger-link]").forEach(link => {
-    const textEl = link.querySelector("[stagger-link-text]");
-    if (!textEl) return;
-
-    const split = new SplitText(textEl, { type: "chars" });
-    splitTextMap.set(link, split);
-  });
-}
-
-// Initial split
-setupSplits();
-
-// Update on resize
-let windowWidth = window.innerWidth;
-window.addEventListener("resize", () => {
-  if (window.innerWidth !== windowWidth) {
-    windowWidth = window.innerWidth;
-    setupSplits();
-    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-  }
-});
-
-// Hover animations
-document.querySelectorAll("[stagger-link]").forEach(link => {
-  const split = splitTextMap.get(link);
-  if (!split) return;
-
-  link.addEventListener("mouseenter", () => {
-    gsap.to(split.chars, {
-      yPercent: -100,
-      duration: 0.3,
-      ease: "power4.inOut",
-      stagger: 0.03,
-      overwrite: true
-    });
-  });
-
-  link.addEventListener("mouseleave", () => {
-    gsap.to(split.chars, {
-      yPercent: 0,
-      duration: 0.2,
-      ease: "power4.inOut",
-      stagger: 0.02
-    });
-  });
-});
-
-// OSMO new custom cursor
-function initCursorMarqueeEffect() {
-  const hoverOutDelay = 0.4;
-  const followDuration = 0.8;
-  const speedMultiplier = 5;
-
-  const cursor = document.querySelector('[data-cursor-marquee-status]');
-  if (!cursor) return;
-  const targets = cursor.querySelectorAll('[data-cursor-marquee-text-target]');
-
-  const xTo = gsap.quickTo(cursor, 'x', { duration: followDuration, ease: 'power3' });
-  const yTo = gsap.quickTo(cursor, 'y', { duration: followDuration, ease: 'power3' });
-
-  let pauseTimeout = null;
-  let activeEl = null;
-  let lastX = 0;
-  let lastY = 0;
-
-  function playFor(el) {
-    if (!el) return;
-    if (pauseTimeout) clearTimeout(pauseTimeout);
-    const text = el.getAttribute('data-cursor-marquee-text') || '';
-    const sec = (text.length || 1) / speedMultiplier;
-    targets.forEach(t => {
-      t.textContent = text;
-      t.style.animationPlayState = 'running';
-      t.style.animationDuration = sec + 's';
-    });
-    cursor.setAttribute('data-cursor-marquee-status', 'active');
-    activeEl = el;
-  }
-
-  function pauseLater() {
-    cursor.setAttribute('data-cursor-marquee-status', 'not-active');
-    if (pauseTimeout) clearTimeout(pauseTimeout);
-    pauseTimeout = setTimeout(() => {
-      targets.forEach(t => {
-        t.style.animationPlayState = 'paused';
-      });
-    }, hoverOutDelay * 1000);
-    activeEl = null;
-  }
-
-  function checkTarget() {
-    const el = document.elementFromPoint(lastX, lastY);
-    const hit = el && el.closest('[data-cursor-marquee-text]');
-    if (hit !== activeEl) {
-      if (activeEl) pauseLater();
-      if (hit) playFor(hit);
-    }
-  }
-
-  window.addEventListener('pointermove', e => {
-    lastX = e.clientX;
-    lastY = e.clientY;
-    xTo(lastX);
-    yTo(lastY);
-    checkTarget();
-  }, { passive: true });
-
-  window.addEventListener('scroll', () => {
-    xTo(lastX);
-    yTo(lastY);
-    checkTarget();
-  }, { passive: true });
-
-  setTimeout(() => {
-    cursor.setAttribute('data-cursor-marquee-status', 'not-active');
-  }, 500);
-}
-
-// Initialize Cursor with Marquee Effect
-document.addEventListener('DOMContentLoaded', function() {
-  initCursorMarqueeEffect();
-});
-
-
 // OSMO footer reveal on scroll
-
-// Footer Parallax Effect
 function initFooterParallax(){
   document.querySelectorAll('[data-footer-parallax]').forEach(el => {
     const tl = gsap.timeline({
@@ -778,14 +1025,6 @@ function initFooterParallax(){
     }
   });
 }
-
-// Initialize Footer with Parallax Effect
-document.addEventListener('DOMContentLoaded', () => {
-  initFooterParallax();
-});
-
-
-
 
 // Bunny player background
 function initBunnyPlayerBackground() {
@@ -1104,106 +1343,6 @@ function initBunnyPlayerBackground() {
 
 }
 
-
-
-// Initialize Bunny HTML HLS Player (Background)
-
-document.addEventListener('DOMContentLoaded', function() {
-
-  initBunnyPlayerBackground();
-
-});
-
-
-
-
-
-//nav text-link stagger — hover on [data-nav-stagger] (often a parent); text split on [data-nav-stagger-target] or legacy same-element <a>
-function initNavCharStagger() {
-  const triggers = document.querySelectorAll('[data-nav-stagger]');
-
-  triggers.forEach(trigger => {
-    if (trigger.dataset.splitInit) return;
-
-    let target = trigger.querySelector('[data-nav-stagger-target]');
-    if (!target) {
-      if (trigger.matches('a')) {
-        target = trigger;
-      } else {
-        target = trigger.querySelector('a') || trigger.firstElementChild;
-      }
-    }
-    if (!target) return;
-
-    trigger.dataset.splitInit = 'true';
-
-    const split = new SplitText(target, {
-      type: 'chars',
-      charsClass: 'char'
-    });
-
-    gsap.set(split.chars, {
-      yPercent: 0
-    });
-
-    let enterTween = null;
-    let leaveTween = null;
-    let leaveQueued = false;
-
-    const runLeave = () => {
-      leaveQueued = false;
-      if (leaveTween) leaveTween.kill();
-      leaveTween = gsap.to(split.chars, {
-        yPercent: 0,
-        duration: 0.3,
-        ease: 'power4.out',
-        stagger: {
-          each: 0.01
-        },
-        onComplete: () => {
-          leaveTween = null;
-        }
-      });
-    };
-
-    trigger.addEventListener('mouseenter', () => {
-      leaveQueued = false;
-      if (leaveTween) {
-        leaveTween.kill();
-        leaveTween = null;
-      }
-      if (enterTween) enterTween.kill();
-      enterTween = gsap.to(split.chars, {
-        yPercent: -100,
-        duration: 0.3,
-        ease: 'power4.out',
-        stagger: {
-          each: 0.01
-        },
-        onComplete: () => {
-          enterTween = null;
-          if (leaveQueued) runLeave();
-        }
-      });
-    });
-
-    trigger.addEventListener('mouseleave', () => {
-      leaveQueued = true;
-      if (!enterTween) {
-        runLeave();
-      }
-    });
-  });
-}
-document.addEventListener('DOMContentLoaded', initNavCharStagger);
-
-
-
-
-
-
-
-
 // OSMO Marquee Scroll Direction
 
 function initCSSMarquee() {
@@ -1261,480 +1400,6 @@ function initCSSMarquee() {
   });
 }
 
-// Initialize CSS Marquee (after DOM and optionally after Webflow)
-function runCSSMarquee() {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', runCSSMarquee);
-    return;
-  }
-  initCSSMarquee();
-}
-runCSSMarquee();
-// Also run when Webflow is ready (in case marquee is injected or laid out later)
-window.Webflow = window.Webflow || [];
-window.Webflow.push(initCSSMarquee);
-
-
-
-
-// OSMO Custom form validation
-function initBasicFormValidation() {
-  const formElements = document.querySelectorAll('form[data-form-validate]');
-
-  formElements.forEach((form) => {
-    const fields = form.querySelectorAll('[data-validate] input, [data-validate] textarea');
-    const submitButtonDiv = form.querySelector('[data-submit]'); // The div wrapping the submit button
-    // Support both <input type="submit"> and <button type="submit"> (Webflow often uses button)
-    const submitInput =
-      (submitButtonDiv && submitButtonDiv.querySelector('input[type="submit"], button[type="submit"]')) ||
-      form.querySelector('input[type="submit"], button[type="submit"]');
-
-    if (!submitInput) return; // No submit control found, skip this form
-
-    // Capture the form load time
-    const formLoadTime = new Date().getTime(); // Timestamp when the form was loaded
-
-    // Function to validate individual fields (input or textarea)
-    const validateField = (field) => {
-      const parent = field.closest('[data-validate]'); // Get the parent div
-      if (!parent) return true;
-      const minLength = field.getAttribute('min');
-      const maxLength = field.getAttribute('max');
-      const type = field.getAttribute('type');
-      let isValid = true;
-
-      // Check if the field has content
-      if (field.value.trim() !== '') {
-        parent.classList.add('is--filled');
-      } else {
-        parent.classList.remove('is--filled');
-      }
-
-      // Validation logic for min and max length
-      if (minLength && field.value.length < minLength) {
-        isValid = false;
-      }
-
-      if (maxLength && field.value.length > maxLength) {
-        isValid = false;
-      }
-
-      // Validation logic for email input type
-      if (type === 'email' && field.value.trim() !== '' && !/\S+@\S+\.\S+/.test(field.value)) {
-        isValid = false;
-      }
-
-      // Add or remove success/error classes on the parent div
-      if (isValid) {
-        parent.classList.remove('is--error');
-        parent.classList.add('is--success');
-      } else {
-        parent.classList.remove('is--success');
-        parent.classList.add('is--error');
-      }
-
-      return isValid;
-    };
-
-    // Function to start live validation for a field
-    const startLiveValidation = (field) => {
-      field.addEventListener('input', function () {
-        validateField(field);
-      });
-    };
-
-    // Function to validate and start live validation for all fields, focusing on the first field with an error
-    const validateAndStartLiveValidationForAll = () => {
-      let allValid = true;
-      let firstInvalidField = null;
-
-      fields.forEach((field) => {
-        const valid = validateField(field);
-        if (!valid && !firstInvalidField) {
-          firstInvalidField = field; // Track the first invalid field
-        }
-        if (!valid) {
-          allValid = false;
-        }
-        startLiveValidation(field); // Start live validation for all fields
-      });
-
-      // If there is an invalid field, focus on the first one
-      if (firstInvalidField) {
-        firstInvalidField.focus();
-      }
-
-      return allValid;
-    };
-
-    // Anti-spam: Check if form was filled too quickly
-    const isSpam = () => {
-      const currentTime = new Date().getTime();
-      const timeDifference = (currentTime - formLoadTime) / 1000; // Convert milliseconds to seconds
-      return timeDifference < 5; // Return true if form is filled within 5 seconds
-    };
-
-    let allowSubmit = false;
-
-    const trySubmit = () => {
-      if (validateAndStartLiveValidationForAll()) {
-        if (isSpam()) {
-          alert('Form submitted too quickly. Please try again.');
-          return;
-        }
-        allowSubmit = true;
-        if (typeof form.requestSubmit === 'function') {
-          form.requestSubmit();
-        } else {
-          form.submit();
-        }
-      }
-    };
-
-    // Intercept form submit so validation runs before Webflow/native submit
-    form.addEventListener('submit', function (event) {
-      if (!allowSubmit) {
-        event.preventDefault();
-        trySubmit();
-      } else {
-        allowSubmit = false;
-      }
-    });
-
-    // Click on the [data-submit] wrapper (e.g. div with "Submit" text) — the real input is often hidden in Webflow
-    if (submitButtonDiv) {
-      submitButtonDiv.addEventListener('click', function (e) {
-        e.preventDefault();
-        trySubmit();
-      });
-      // Allow Enter on the wrapper if it has tabindex (keyboard submit)
-      submitButtonDiv.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          trySubmit();
-        }
-      });
-    }
-
-    // Handle pressing the "Enter" key
-    form.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
-        event.preventDefault(); // Prevent the default form submission
-        trySubmit();
-      }
-    });
-  });
-}
-// Initialize Basic Form Validation
-document.addEventListener('DOMContentLoaded', () => {
-  initBasicFormValidation();
-});
-
-
-
-
-
-// Contact Flyout
-window.Webflow ||= [];
-window.Webflow.push(function initContactFlyout() {
-  const wrap = document.querySelector('.contact-flyout_wrap');
-  if (!wrap) return;
-
-  const overlay = wrap.querySelector('[data-contact="overlay"]');
-  const panel = wrap.querySelector('[data-contact="panel"]') || wrap.querySelector('.contact-flyout_panel') || wrap.querySelector('.contact-flyout') || wrap.firstElementChild;
-  const openTriggers = document.querySelectorAll('[data-contact="open"]');
-  const closeTriggers = wrap.querySelectorAll('[data-contact="close"]');
-
-  // Panel inner elements (optional)
-  const headerEl = panel?.querySelector('[data-contact="header"]');
-  const titleEl = panel?.querySelector('[data-contact="title"]');
-  const linksEl = panel?.querySelector('[data-contact="links"]');
-  const formEl = panel?.querySelector('[data-contact="form"]');
-
-  const state = { isOpen: false };
-  let titleSplit = null; // SplitText instance for cleanup
-
-  // Initial state: wrap pointer-events only (do not touch flex/layout), overlay 0%, panel at 110% xPercent, inner elements at "from" values
-  // Wrap is made visible by JS on open; keep opacity 0 and pointer-events none until then so it doesn't show or block
-  gsap.set(wrap, {
-    visibility: 'visible',
-    opacity: 0,
-    pointerEvents: 'none',
-  });
-  if (overlay) gsap.set(overlay, { opacity: 0, pointerEvents: 'none' });
-  gsap.set(panel, { xPercent: 110 });
-
-  // Header: from yPercent 150, opacity 0
-  if (headerEl) gsap.set(headerEl, { yPercent: 150, opacity: 0 });
-  // Title: split by lines, overflow hidden, from yPercent 110, opacity 0
-  if (titleEl && typeof SplitText !== 'undefined') {
-    titleEl.style.overflow = 'hidden';
-    titleSplit = new SplitText(titleEl, { type: 'lines' });
-    gsap.set(titleSplit.lines, { yPercent: 110, opacity: 0 });
-  } else if (titleEl) {
-    gsap.set(titleEl, { yPercent: 110, opacity: 0 });
-  }
-  // Links: from yPercent 150, opacity 0
-  if (linksEl) gsap.set(linksEl, { yPercent: 150, opacity: 0 });
-  // Form: all children from yPercent 150, opacity 0
-  if (formEl) gsap.set(formEl.children, { yPercent: 150, opacity: 0 });
-
-  // Open timeline
-  const innerStart = 0.2;
-  const flyoutTl = gsap.timeline({ paused: true });
-  // data-contact="overlay"
-  if (overlay) flyoutTl.to(overlay, {
-    opacity: 0.6,
-    duration: 0.2,
-    ease: 'linear',
-  }, 0);
-  // data-contact="panel" (.contact-flyout_panel) 110% → 0%
-  flyoutTl.to(panel, {
-    xPercent: 0,
-    duration: 0.5,
-    ease: 'power4.inOut',
-  }, 0);
-  // data-contact="header"
-  if (headerEl) flyoutTl.to(headerEl, {
-    yPercent: 0,
-    opacity: 1,
-    duration: 0.6,
-    ease: 'power4.out',
-  }, innerStart);
-  // data-contact="title" (split by lines)
-  if (titleEl) {
-    if (titleSplit?.lines) {
-      flyoutTl.to(titleSplit.lines, {
-        yPercent: 0,
-        opacity: 1,
-        duration: 0.5,
-        ease: 'power4.out',
-        stagger: 0.05,
-      }, innerStart + 0.1);
-    } else {
-      flyoutTl.to(titleEl, {
-        yPercent: 0,
-        opacity: 1,
-        duration: 0.5,
-        ease: 'power4.out',
-      }, innerStart);
-    }
-  }
-  // data-contact="links"
-  if (linksEl) flyoutTl.to(linksEl, {
-    yPercent: 0,
-    opacity: 1,
-    duration: 0.5,
-    ease: 'power4.out',
-  }, innerStart + 0.2);
-  // data-contact="form" (children)
-  if (formEl && formEl.children.length) {
-    flyoutTl.to(formEl.children, {
-      yPercent: 0,
-      opacity: 1,
-      duration: 0.5,
-      ease: 'power4.out',
-      stagger: 0.03,
-    }, innerStart + 0.3);
-  }
-
-  function open() {
-    if (state.isOpen) return;
-    state.isOpen = true;
-    // if (window.lenis) window.lenis.stop();
-    wrap.setAttribute('aria-hidden', 'false');
-
-    gsap.set(wrap, { visibility: 'visible', opacity: 1, pointerEvents: 'auto' });
-    if (overlay) gsap.set(overlay, { pointerEvents: 'auto' });
-
-    flyoutTl.reversed(false);
-    flyoutTl.timeScale(1);
-    flyoutTl.progress(0);
-    flyoutTl.play();
-  }
-
-  function close() {
-    if (!state.isOpen) return;
-    state.isOpen = false;
-    flyoutTl.pause();
-
-    const closeDuration = 0.35;
-    const closeEase = 'power3.in';
-    const closeTl = gsap.timeline({
-      onComplete: () => {
-        gsap.set(wrap, { pointerEvents: 'none', opacity: 0 });
-        if (overlay) gsap.set(overlay, { pointerEvents: 'none' });
-        wrap.setAttribute('aria-hidden', 'true');
-        // if (window.lenis) window.lenis.start();
-      },
-    });
-
-    // data-contact="header"
-    if (headerEl) closeTl.to(headerEl, {
-      yPercent: 150,
-      opacity: 0,
-      duration: closeDuration * 0.6,
-      ease: closeEase,
-    }, 0);
-    // data-contact="title" (split by lines)
-    if (titleEl) {
-      if (titleSplit?.lines) {
-        closeTl.to(titleSplit.lines, {
-          yPercent: 110,
-          opacity: 0,
-          duration: closeDuration * 0.6,
-          ease: closeEase,
-          stagger: 0.02,
-        }, 0);
-      } else {
-        closeTl.to(titleEl, {
-          yPercent: 110,
-          opacity: 0,
-          duration: closeDuration * 0.6,
-          ease: closeEase,
-        }, 0);
-      }
-    }
-    // data-contact="links"
-    if (linksEl) closeTl.to(linksEl, {
-      yPercent: 150,
-      opacity: 0,
-      duration: closeDuration * 0.6,
-      ease: closeEase,
-    }, 0);
-    // data-contact="form" (children)
-    if (formEl && formEl.children.length) {
-      closeTl.to(formEl.children, {
-        yPercent: 150,
-        opacity: 0,
-        duration: closeDuration * 0.6,
-        ease: closeEase,
-        stagger: 0.015,
-      }, 0);
-    }
-    // data-contact="panel" (.contact-flyout_panel) 0% → 110%
-    closeTl.to(panel, {
-      xPercent: 110,
-      duration: closeDuration * 1.2,
-      ease: closeEase,
-    }, closeDuration * 0.1);
-    // data-contact="overlay" — longer, softer fade to avoid abrupt flash
-    if (overlay) closeTl.to(overlay, {
-      opacity: 0,
-      duration: 0.5,
-      ease: 'linear',
-    }, closeDuration * 0.1);
-  }
-
-  openTriggers.forEach((el) => {
-    el.addEventListener('click', (e) => {
-      e.preventDefault();
-      open();
-    });
-  });
-
-  closeTriggers.forEach((el) => {
-    el.addEventListener('click', (e) => {
-      e.preventDefault();
-      close();
-    });
-  });
-
-  // Close: overlay click, or click outside panel
-  if (overlay) {
-    overlay.addEventListener('click', close);
-  } else {
-    wrap.addEventListener('click', (e) => {
-      if (!panel.contains(e.target)) close();
-    });
-  }
-  panel.addEventListener('click', (e) => e.stopPropagation());
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && state.isOpen) close();
-  });
-
-  wrap.setAttribute('aria-hidden', 'true');
-});
-
-
-
-// OSMO Nav flyout
-gsap.registerPlugin(CustomEase);
-
-CustomEase.create( "main", "0.65, 0.01, 0.05, 0.99" );
-
-gsap.defaults({
-  ease:"main",
-  duration:0.7
-});
-  
-function initSideNavWipeEffect(){
-
-  let navWrap = document.querySelector("[data-sidenav-wrap]");
-  let state = navWrap.getAttribute("data-nav-state");
-  let overlay = navWrap.querySelector("[data-sidenav-overlay]");
-  let menu = navWrap.querySelector("[data-sidenav-menu]");
-  let bgPanels = navWrap.querySelectorAll("[data-sidenav-panel]");
-  let menuToggles = document.querySelectorAll("[data-sidenav-toggle]");
-  let menuLinks = navWrap.querySelectorAll("[data-sidenav-link]");
-  let fadeTargets = navWrap.querySelectorAll("[data-sidenav-fade]");
-  let menuButton = document.querySelector("[data-sidenav-button]");
-  let menuButtonTexts = menuButton.querySelectorAll("[data-sidenav-label]");
-  let menuButtonIcon = menuButton.querySelector("[data-sidenav-icon]");
-
-  let tl = gsap.timeline()
-  
-  const openNav = () =>{
-    navWrap.setAttribute("data-nav-state", "open");
-    
-    tl.clear()
-    .set(navWrap,{display:"block"})
-    .set(menu,{xPercent:0},"<")
-    .fromTo(menuButtonTexts,{yPercent:0},{yPercent:-100,stagger:0.2})
-    .fromTo(menuButtonIcon,{rotate:0},{rotate:315},"<")
-    .fromTo(overlay,{autoAlpha:0},{autoAlpha:1},"<")
-    .fromTo(bgPanels,{xPercent:101},{xPercent:0,stagger:0.12,duration: 0.575},"<")
-    .fromTo(menuLinks,{yPercent:150,rotate:10},{yPercent:0, rotate:0,stagger:0.05},"<+=0.35")
-    .fromTo(fadeTargets,{autoAlpha:0,yPercent:50},{autoAlpha:1, yPercent:0,stagger:0.04},"<+=0.2");
-  }
-  
-  const closeNav = () =>{
-    navWrap.setAttribute("data-nav-state", "closed");
-    
-    tl.clear()
-    .to(overlay,{autoAlpha:0})
-    .to(menu,{xPercent:120},"<")
-    .to(menuButtonTexts,{yPercent:0},"<")
-    .to(menuButtonIcon,{rotate:0},"<")
-    .set(navWrap,{display:"none"});
-  }  
-  
-  // Toggle menu open / close depending on its current state
-  menuToggles.forEach((toggle) => {
-    toggle.addEventListener("click", () => {
-      state = navWrap.getAttribute("data-nav-state");
-      if (state === "open") {
-        closeNav();
-      } else {
-        openNav();
-      }
-    });    
-  });
-  
-  // If menu is open, you can close it using the "escape" key
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && navWrap.getAttribute("data-nav-state") === "open") {
-      closeNav();
-    }
-  });
-}
-document.addEventListener("DOMContentLoaded", () => {
-  initSideNavWipeEffect();
-});
-
-
-
 // ================================================================
 // HOME INFINITE SLIDER — adapted from the Codegrid infinite horizontal
 // parallax slider demo. Slides are static Webflow markup (.slider >
@@ -1742,7 +1407,11 @@ document.addEventListener("DOMContentLoaded", () => {
 // data array — this only clones them into loop copies and drives the
 // drag/wheel physics + parallax. See docs/WEBFLOW-INFINITE-SLIDER-STRUCTURE.md.
 // ================================================================
-document.querySelectorAll(".slider").forEach((sliderEl) => {
+// TODO (§3 teardown): capture the rAF id + a running flag and remove the
+// document/window listeners on Barba afterLeave when leaving `home`, or every
+// return visit stacks another animate() loop over detached nodes.
+function initHomeSlider() {
+  document.querySelectorAll(".slider").forEach((sliderEl) => {
   const track = sliderEl.querySelector(".slide-track");
   if (!track) return;
 
@@ -1985,6 +1654,6 @@ document.querySelectorAll(".slider").forEach((sliderEl) => {
   window.addEventListener("resize", handleResize);
 
   animate();
-});
+  });
+}
 
-// OSMO Page transition
