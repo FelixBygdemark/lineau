@@ -41,7 +41,6 @@ function initOnceFunctions() {
   initCursorMarqueeEffect();
   initSideNavWipeEffect();
   initBasicFormValidation();
-  initcontactFlyout();
   
 
   // Runs once on first load
