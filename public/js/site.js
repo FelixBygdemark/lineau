@@ -105,7 +105,7 @@ function runPageLeaveAnimation(current, next) {
     return tl.set(current, { autoAlpha: 0 });
   }
 
-  tl.to(current, { y: 50, opacity: 0.9, scale: 0.95, duration: 0.8, ease: "power3.inOut" });
+  tl.to(current, { y: 0, opacity: 0.9, scale: 0.98, duration: 0.8, ease: "power3.inOut" });
 
   tl.fromTo(panel, { yPercent: 100, y: 0 }, { yPercent: 0, duration: 0.6, ease: "power3.out" }, "<+=0.3");
 
