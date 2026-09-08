@@ -105,6 +105,9 @@ function runPageLeaveAnimation(current, next) {
     return tl.set(current, { autoAlpha: 0 });
   }
 
+  // Panel is hidden again in runPageEnterAnimation — make it visible before the wipe.
+  tl.set(panel, { autoAlpha: 1 }, 0);
+
   tl.to(current, { y: 50, opacity: 0.9, scale: 0.98, duration: 0.8, ease: "power3.inOut" });
 
   tl.fromTo(panel, { yPercent: 100, y: 0 }, { yPercent: 0, duration: 0.6, ease: "power3.out" }, "<+=0.3");
@@ -113,8 +116,10 @@ function runPageLeaveAnimation(current, next) {
 }
 
 function runPageEnterAnimation(next){
+  const panel = document.querySelector('[data-transition-panel]');
+
   const tl = gsap.timeline();
-  
+
   if (reducedMotion) {
     // Immediate swap behavior if user prefers reduced motion
     tl.set(next, { autoAlpha: 1 });
@@ -122,14 +127,17 @@ function runPageEnterAnimation(next){
     tl.call(resetPage, [next], "pageReady");
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
-  
+
   tl.add("startEnter", 1.1);
-  
+
   tl.fromTo(next, {
     autoAlpha: 0,
   },{
     autoAlpha: 1,
   }, "startEnter");
+
+  // Hide the panel and move it back to its leave-animation start position.
+  tl.set(panel, { autoAlpha: 0, yPercent: 100, y: 0 }, "startEnter");
 
   tl.add("pageReady");
   tl.call(resetPage, [next], "pageReady");
