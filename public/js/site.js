@@ -103,7 +103,7 @@ function runPageLeaveAnimation(current, next) {
     return tl.set(current, { autoAlpha: 0 });
   }
 
-  tl.to(current, { y: 500, duration: 0.4 });
+  tl.to(current, { y: 500 });
 
   if (panel) {
     tl.fromTo(panel, { 
