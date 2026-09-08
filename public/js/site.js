@@ -105,7 +105,7 @@ function runPageLeaveAnimation(current, next) {
     return tl.set(current, { autoAlpha: 0 });
   }
 
-  tl.to(current, { y: 150 });
+  tl.to(current, { y: 100, opacity: 90 });
 
   tl.fromTo(panel, { yPercent: 100, y: 0 }, { yPercent: 0 }, "<+=0.2");
 
@@ -123,7 +123,7 @@ function runPageEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
   
-  tl.add("startEnter", 1.5);
+  tl.add("startEnter", 1.1);
   
   tl.fromTo(next, {
     autoAlpha: 0,
