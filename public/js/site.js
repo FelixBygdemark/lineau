@@ -21,7 +21,7 @@ rmMQ.addListener?.(e => (reducedMotion = e.matches));
 const has = (s) => !!nextPage.querySelector(s);
 
 let staggerDefault = 0.05;
-let durationDefault = 0.6;
+let durationDefault = 1.5;
 
 CustomEase.create("osmo", "0.625, 0.05, 0, 1");
 gsap.defaults({ ease: "osmo", duration: durationDefault });
