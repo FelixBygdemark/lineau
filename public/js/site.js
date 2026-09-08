@@ -160,6 +160,28 @@ function runPageEnterAnimation(next){
     }, null, "startEnter");
   }
 
+  // Case only: mask-clipped line reveal of the title + the media mask sliding up.
+  if (namespace === "case") {
+    const titleLines = [];
+    next.querySelectorAll('[data-load-case="title"]').forEach((el) => {
+      const split = new SplitText(el, { type: "lines", mask: "lines" });
+      titleLines.push(...split.lines);
+    });
+
+    if (titleLines.length) {
+      tl.from(titleLines, {
+        opacity: 0,
+        duration: 0.8,
+        ease: "power3.out",
+      }, "startEnter");
+    }
+
+    tl.fromTo(next.querySelectorAll('[data-load-case="media-mask"]'),
+      { yPercent: 0 },
+      { yPercent: -105, duration: 0.8, ease: "power3.inOut" },
+      "startEnter");
+  }
+
   tl.add("pageReady");
   tl.call(resetPage, [next], "pageReady");
 
