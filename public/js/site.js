@@ -92,11 +92,13 @@ function runPageOnceAnimation(next) {
 }
 
 function runPageLeaveAnimation(current, next) {
+
+  const panel = document.querySelector('[data-transition-panel]');
+
   const tl = gsap.timeline({
     onComplete: () => { current.remove() }
   });
   
-  const panel = document.querySelector('[data-transition-panel]');
 
   if (reducedMotion) {
     // Immediate swap behavior if user prefers reduced motion
