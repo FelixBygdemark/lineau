@@ -171,6 +171,7 @@ function runPageEnterAnimation(next){
     if (titleLines.length) {
       tl.from(titleLines, {
         opacity: 0,
+        yPercent: 110,
         duration: 0.8,
         ease: "power3.out",
       }, "startEnter");
