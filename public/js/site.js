@@ -131,6 +131,11 @@ function runPageEnterAnimation(next){
 
   tl.add("startEnter", 0.9);
 
+  tl.fromTo(next, {
+    autoAlpha: 0,
+  },{
+    autoAlpha: 1,
+  }, "startEnter");
 
   // Hide the panel and move it back to its leave-animation start position.
   tl.set(panel, { autoAlpha: 0, yPercent: 100, y: 0 }, "startEnter");
@@ -176,8 +181,8 @@ function runPageEnterAnimation(next){
 
     tl.fromTo(next.querySelectorAll('[data-load-case="media-mask"]'),
       { yPercent: 0 },
-      { yPercent: -105, duration: 0.8, ease: "power3.inOut" },
-      "startEnter");
+      { yPercent: -105, duration: 0.9, ease: "power3.inOut" },
+      "<+=0.3");
   }
 
   tl.add("pageReady");
