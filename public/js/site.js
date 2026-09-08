@@ -96,21 +96,21 @@ function runPageLeaveAnimation(current, next) {
     onComplete: () => { current.remove() }
   });
   
-  const panel = nextPage.querySelector('[data-transition-panel]');
-  
+  const panel = document.querySelector('[data-transition-panel]');
+
   if (reducedMotion) {
     // Immediate swap behavior if user prefers reduced motion
     return tl.set(current, { autoAlpha: 0 });
   }
 
-  tl.to(current, { y: 500 });
+  tl.to(current, { y: 150 }, 0);
 
   if (panel) {
-    tl.fromTo(panel, { 
+    tl.fromTo(panel, {
       yPercent: 100,
     },{
       yPercent: 0,
-    }, "startEnter");
+    }, 0);
   }
 
   return tl;
