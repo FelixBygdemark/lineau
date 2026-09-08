@@ -107,7 +107,7 @@ function runPageLeaveAnimation(current, next) {
 
   tl.to(current, { y: 150 });
 
-  tl.to(panel, { yPercent: 0 }, "<+=0.2");
+  tl.fromTo(panel, { yPercent: 100, y: 0 }, { yPercent: 0 }, "<+=0.2");
 
   return tl;
 }
