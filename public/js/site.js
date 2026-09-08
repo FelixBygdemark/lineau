@@ -21,7 +21,7 @@ rmMQ.addListener?.(e => (reducedMotion = e.matches));
 const has = (s) => !!nextPage.querySelector(s);
 
 let staggerDefault = 0.05;
-let durationDefault = 1.1;
+let durationDefault = 0.9;
 
 CustomEase.create("osmo", "0.625, 0.05, 0, 1");
 gsap.defaults({ ease: "osmo", duration: durationDefault });
@@ -129,7 +129,7 @@ function runPageEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  tl.add("startEnter", 1.1);
+  tl.add("startEnter", 0.9);
 
   tl.fromTo(next, {
     autoAlpha: 0,
@@ -168,14 +168,16 @@ function runPageEnterAnimation(next){
       titleLines.push(...split.lines);
     });
 
-    if (titleLines.length) {
-      tl.from(titleLines, {
-        opacity: 0,
-        yPercent: 110,
-        duration: 0.8,
-        ease: "power3.out",
-      }, "startEnter");
-    }
+    // Hard-hide now (synchronous, before first paint) — don't rely on from()'s
+    // immediateRender across the sync leave/enter boundary, that's the flash.
+    gsap.set(titleLines, { yPercent: 110 });
+
+    tl.to(titleLines, {
+      yPercent: 0,
+      duration: 0.8,
+      ease: "power3.out",
+      stagger: 0.08,
+    }, "startEnter");
 
     tl.fromTo(next.querySelectorAll('[data-load-case="media-mask"]'),
       { yPercent: 0 },
