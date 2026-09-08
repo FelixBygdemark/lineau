@@ -160,19 +160,14 @@ function runPageEnterAnimation(next){
     }, null, "startEnter");
   }
 
-  // Case only: mask-clipped line reveal of the title + the media mask sliding up.
+  // Case only: title slides up into view + media mask sliding up.
   if (namespace === "case") {
-    const titleLines = [];
-    next.querySelectorAll('[data-load-case="title"]').forEach((el) => {
-      const split = new SplitText(el, { type: "lines", mask: "lines" });
-      titleLines.push(...split.lines);
-    });
+    const titles = next.querySelectorAll('[data-load-case="title"]');
 
-    // Hard-hide now (synchronous, before first paint) — don't rely on from()'s
-    // immediateRender across the sync leave/enter boundary, that's the flash.
-    gsap.set(titleLines, { yPercent: 110 });
+    // Hard-hide now (synchronous, before first paint) so there's no flash.
+    gsap.set(titles, { yPercent: 110 });
 
-    tl.to(titleLines, {
+    tl.to(titles, {
       yPercent: 0,
       duration: 0.9,
       ease: "power3.out",
