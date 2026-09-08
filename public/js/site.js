@@ -117,6 +117,7 @@ function runPageLeaveAnimation(current, next) {
 
 function runPageEnterAnimation(next){
   const panel = document.querySelector('[data-transition-panel]');
+  const namespace = next.getAttribute("data-barba-namespace");
 
   const tl = gsap.timeline();
 
@@ -138,6 +139,26 @@ function runPageEnterAnimation(next){
 
   // Hide the panel and move it back to its leave-animation start position.
   tl.set(panel, { autoAlpha: 0, yPercent: 100, y: 0 }, "startEnter");
+
+  // Home only: build the slider now (so the cloned slides exist), then stagger
+  // the on-screen slides up. Inside a .call so the targets are queried AFTER
+  // buildLoop() has replaced the original slides with clones.
+  if (namespace === "home") {
+    tl.call(() => {
+      initHomeSlider();
+      const slides = Array.from(next.querySelectorAll(".slide-track .slide")).filter((s) => {
+        const r = s.getBoundingClientRect();
+        return r.right > 0 && r.left < window.innerWidth;
+      });
+      gsap.from(slides, {
+        y: 60,
+        autoAlpha: 0,
+        duration: 0.8,
+        ease: "power3.out",
+        stagger: 0.05,
+      });
+    }, null, "startEnter");
+  }
 
   tl.add("pageReady");
   tl.call(resetPage, [next], "pageReady");
@@ -1430,6 +1451,8 @@ function initCSSMarquee() {
 // return visit stacks another animate() loop over detached nodes.
 function initHomeSlider() {
   document.querySelectorAll(".slider").forEach((sliderEl) => {
+  if (sliderEl.dataset.sliderInited) return; // build once per page (Option A calls this early from runPageEnterAnimation)
+
   const track = sliderEl.querySelector(".slide-track");
   if (!track) return;
 
@@ -1656,6 +1679,7 @@ function initHomeSlider() {
     buildLoop();
   }
 
+  sliderEl.dataset.sliderInited = "true";
   buildLoop();
 
   sliderEl.addEventListener("wheel", handleWheel, { passive: false });
