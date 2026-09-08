@@ -131,11 +131,6 @@ function runPageEnterAnimation(next){
 
   tl.add("startEnter", 0.9);
 
-  tl.fromTo(next, {
-    autoAlpha: 0,
-  },{
-    autoAlpha: 1,
-  }, "startEnter");
 
   // Hide the panel and move it back to its leave-animation start position.
   tl.set(panel, { autoAlpha: 0, yPercent: 100, y: 0 }, "startEnter");
@@ -151,11 +146,11 @@ function runPageEnterAnimation(next){
         return r.right > 0 && r.left < window.innerWidth;
       });
       gsap.from(slides, {
-        y: 60,
+        y: 500,
         autoAlpha: 0,
-        duration: 0.8,
+        duration: 0.9,
         ease: "power3.out",
-        stagger: 0.05,
+        stagger: 0.1,
       });
     }, null, "startEnter");
   }
@@ -174,7 +169,7 @@ function runPageEnterAnimation(next){
 
     tl.to(titleLines, {
       yPercent: 0,
-      duration: 0.8,
+      duration: 0.9,
       ease: "power3.out",
       stagger: 0.08,
     }, "startEnter");
