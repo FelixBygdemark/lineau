@@ -92,57 +92,17 @@ function runPageOnceAnimation(next) {
 }
 
 function runPageLeaveAnimation(current, next) {
-  const parent = current.parentElement || document.body;
-  const transitionWrap = document.querySelector("[data-transition-wrap]");
-  const transitionDark = transitionWrap.querySelector("[data-transition-dark]");
-  
-  // Helper function to prepare transition structure
-  const { wrapper } = prepareForTransition(parent, current, next);
-  
   const tl = gsap.timeline({
-    onComplete: () => {
-      wrapper.replaceWith(next);
-      gsap.set(next, {clearProps: "all" });
-    }
+    onComplete: () => { current.remove() }
   });
   
   if (reducedMotion) {
     // Immediate swap behavior if user prefers reduced motion
     return tl.set(current, { autoAlpha: 0 });
   }
-  
-  tl.set(transitionWrap, {
-    zIndex: 2
-  });
-  
-  tl.fromTo(transitionDark, {
-    autoAlpha: 0
-  },{
-    autoAlpha: 0.2,
-    duration: 1.2,
-  });  
 
-  tl.to(wrapper, {
-    yPercent: 0,
-    duration: 1,
-  }, "<");
+  tl.to(current, { y: 500, duration: 0.4 });
 
-  tl.to(wrapper, {
-    duration: 1.2,
-    clipPath: "inset(0% round 0em)"
-  }, "<");
-  
-  tl.to(current, {
-    y: "-10vh",
-    scale: 1.2,
-    duration: 1.2,
-    overwrite: "auto"
-  }, "<");
-  
-  tl.set(transitionDark, {
-    autoAlpha: 0,
-  });
-  
   return tl;
 }
 
@@ -156,6 +116,14 @@ function runPageEnterAnimation(next){
     tl.call(resetPage, [next], "pageReady");
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
+  
+  tl.add("startEnter", 0.6);
+  
+  tl.fromTo(next, {
+    autoAlpha: 0,
+  },{
+    autoAlpha: 1,
+  }, "startEnter");
 
   tl.add("pageReady");
   tl.call(resetPage, [next], "pageReady");
@@ -164,48 +132,6 @@ function runPageEnterAnimation(next){
     tl.call(resolve, null, "pageReady");
   });
 }
-
-function prepareForTransition(parent, current, next){
-
-  const scrollY = window.scrollY;
-
-  // Freeze current page in place
-  gsap.set(current, {
-    position: "fixed",
-    top: -scrollY,
-    left: 0,
-    width: "100%",
-    overflow: "hidden"
-  });
-
-  // Reset browser scroll so next page starts correctly
-  window.scrollTo(0, 0);
-
-  // Create wrapper
-  const wrapper = document.createElement("div");
-  wrapper.className = "page-transition__wrapper";
-
-  parent.insertBefore(wrapper, next);
-  wrapper.appendChild(next);
-
-  gsap.set(wrapper, {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    width: "100%",
-    height: "100vh",
-    yPercent: 50,
-    overflow: "clip",
-    zIndex: 5,
-    transformStyle: "preserve-3d",
-    willChange: "transform, clip-path",
-    clipPath: "inset(50% round 3em)",
-  });
-
-  return { wrapper };
-}
-
 
 // -----------------------------------------
 // BARBA HOOKS + INIT
