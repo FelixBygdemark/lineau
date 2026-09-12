@@ -93,7 +93,6 @@ function runPageOnceAnimation(next) {
 
 function runPageLeaveAnimation(current, next) {
   const scaleContainer = current.querySelector('[data-page-scale]');
-  const scaleContent = scaleContainer?.querySelector('[data-page-scale-inner]');
   const panel = document.querySelector('[data-transition-panel]');
   const border = document.querySelector('[data-transition-border]');
 
@@ -106,12 +105,6 @@ function runPageLeaveAnimation(current, next) {
     // Immediate swap behavior if user prefers reduced motion
     return tl.set(current, { autoAlpha: 0 });
   }
-
-
-  tl.set(scaleContainer, {
-    height: "100svh",
-    overflow: "hidden"
-  }, 0)
 
   tl.set(next,{
     autoAlpha: 0
@@ -126,7 +119,7 @@ function runPageLeaveAnimation(current, next) {
   }, 0)
 
   tl.to(scaleContainer, {
-     scale: 0.96,
+     scale: 0.9,
      y: "5vh",
      opacity: 0.7,
      duration: 0.8,
