@@ -113,7 +113,7 @@ function runPageLeaveAnimation(current, next) {
   }, 0)
 
   tl.to(current, {
-     y: "15vh", 
+     y: "-15vh", 
      opacity: 0.9, 
      scale: 0.98, 
      duration: 0.8, 
