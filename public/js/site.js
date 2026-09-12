@@ -129,7 +129,7 @@ function runPageLeaveAnimation(current, next) {
   }
 
   tl.to(scaleContainer, {
-     scale: 0.9,
+     scale: 0.95,
      opacity: 0.7,
      duration: 0.8,
      ease: "power3.inOut"
@@ -148,7 +148,7 @@ function runPageLeaveAnimation(current, next) {
     y: 0
   }, {
     yPercent: 0,
-    duration: 0.6,
+    duration: 1,
     ease: "power3.out"
   }, "<+=0.3")
 
@@ -170,7 +170,7 @@ function runPageEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  tl.add("startEnter", 0.9);
+  tl.add("startEnter", 1.1);
 
   tl.fromTo(next, {
     autoAlpha: 0,
