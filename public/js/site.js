@@ -170,7 +170,7 @@ function runPageEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  tl.add("startEnter", 1.1);
+  tl.add("startEnter", 1.4);
 
   tl.fromTo(next, {
     autoAlpha: 0,
