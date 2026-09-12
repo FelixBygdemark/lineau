@@ -92,6 +92,7 @@ function runPageOnceAnimation(next) {
 }
 
 function runPageLeaveAnimation(current, next) {
+  const scaleContainer = current.querySelector('[data-page-scale]');
   const panel = document.querySelector('[data-transition-panel]');
 
   const tl = gsap.timeline({
@@ -111,13 +112,18 @@ function runPageLeaveAnimation(current, next) {
   tl.set(panel, { 
     autoAlpha: 1 
   }, 0)
-
+  
   tl.to(current, {
-     y: "-15vh", 
-     opacity: 0.9, 
-     scale: 0.98, 
-     duration: 0.8, 
-     ease: "power3.inOut" 
+     y: "-15vh",
+     opacity: 0.9,
+     duration: 0.8,
+     ease: "power3.inOut"
+    }, 0)
+
+  tl.to(scaleContainer, {
+     scale: 0.95,
+     duration: 0.8,
+     ease: "power3.inOut"
     }, 0)
 
   tl.fromTo(panel, { 
