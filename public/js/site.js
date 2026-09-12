@@ -130,6 +130,7 @@ function runPageLeaveAnimation(current, next) {
 
   tl.to(scaleContainer, {
      scale: 0.95,
+     y: "5vh",
      opacity: 0.7,
      duration: 0.8,
      ease: "power3.inOut"
