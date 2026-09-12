@@ -112,16 +112,11 @@ function runPageLeaveAnimation(current, next) {
   tl.set(panel, { 
     autoAlpha: 1 
   }, 0)
-  
-  tl.to(current, {
-     y: "10vh",
-     opacity: 0.9,
-     duration: 0.8,
-     ease: "power3.inOut"
-    }, 0)
 
   tl.to(scaleContainer, {
      scale: 0.96,
+     y: "5vh",
+     opacity: 0.7,
      duration: 0.8,
      ease: "power3.inOut"
     }, 0)
