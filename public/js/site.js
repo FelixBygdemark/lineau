@@ -92,7 +92,6 @@ function runPageOnceAnimation(next) {
 }
 
 function runPageLeaveAnimation(current, next) {
-
   const panel = document.querySelector('[data-transition-panel]');
 
   const tl = gsap.timeline({
@@ -105,12 +104,30 @@ function runPageLeaveAnimation(current, next) {
     return tl.set(current, { autoAlpha: 0 });
   }
 
-  // Panel is hidden again in runPageEnterAnimation — make it visible before the wipe.
-  tl.set(panel, { autoAlpha: 1 }, 0);
+  tl.set(next,{
+    autoAlpha: 0
+  }, 0)
 
-  tl.to(current, { y: 50, opacity: 0.9, scale: 0.98, duration: 0.8, ease: "power3.inOut" });
+  tl.set(panel, { 
+    autoAlpha: 1 
+  }, 0)
 
-  tl.fromTo(panel, { yPercent: 100, y: 0 }, { yPercent: 0, duration: 0.6, ease: "power3.out" }, "<+=0.3");
+  tl.to(current, {
+     y: "15vh", 
+     opacity: 0.9, 
+     scale: 0.98, 
+     duration: 0.8, 
+     ease: "power3.inOut" 
+    }, 0)
+
+  tl.fromTo(panel, { 
+    yPercent: 100, 
+    y: 0 
+  }, { 
+    yPercent: 0, 
+    duration: 0.6, 
+    ease: "power3.out" 
+  }, "<+=0.3")
 
   return tl;
 }
@@ -137,12 +154,14 @@ function runPageEnterAnimation(next){
     autoAlpha: 1,
   }, "startEnter");
 
-  // Hide the panel and move it back to its leave-animation start position.
-  tl.set(panel, { autoAlpha: 0, yPercent: 100, y: 0 }, "startEnter");
+  // Hide the panel
+  tl.set(panel, { 
+    autoAlpha: 0, 
+    yPercent: 100, 
+    y: 0 
+  }, "startEnter");
 
-  // Home only: build the slider now (so the cloned slides exist), then stagger
-  // the on-screen slides up. Inside a .call so the targets are queried AFTER
-  // buildLoop() has replaced the original slides with clones.
+  // Home only
   if (namespace === "home") {
     tl.call(() => {
       initHomeSlider();
@@ -160,7 +179,7 @@ function runPageEnterAnimation(next){
     }, null, "startEnter");
   }
 
-  // Case only: title slides up into view + media mask sliding up.
+  // Case only
   if (namespace === "case") {
     const titles = next.querySelectorAll('[data-load-case="title"]');
 
