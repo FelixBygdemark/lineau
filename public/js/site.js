@@ -95,6 +95,7 @@ function runPageLeaveAnimation(current, next) {
   const scaleContainer = current.querySelector('[data-page-scale]');
   const scaleContent = scaleContainer?.querySelector('[data-page-scale-inner]');
   const panel = document.querySelector('[data-transition-panel]');
+  const border = document.querySelector('[data-transition-border]');
 
   const tl = gsap.timeline({
     onComplete: () => { current.remove() }
@@ -120,6 +121,10 @@ function runPageLeaveAnimation(current, next) {
     autoAlpha: 1
   }, 0)
 
+  tl.set(border, {
+    autoAlpha: 1
+  }, 0)
+
   tl.to(scaleContainer, {
      scale: 0.96,
      y: "5vh",
@@ -128,13 +133,21 @@ function runPageLeaveAnimation(current, next) {
      ease: "power3.inOut"
     }, 0)
 
-  tl.fromTo(panel, { 
-    yPercent: 100, 
-    y: 0 
-  }, { 
-    yPercent: 0, 
-    duration: 0.6, 
-    ease: "power3.out" 
+  tl.fromTo(border, {
+    yPercent: -100,
+  }, {
+    yPercent: 0,
+    duration: 0.8,
+    ease: "power3.inOut"
+  }, 0)
+
+  tl.fromTo(panel, {
+    yPercent: 100,
+    y: 0
+  }, {
+    yPercent: 0,
+    duration: 0.6,
+    ease: "power3.out"
   }, "<+=0.3")
 
   return tl;
@@ -142,6 +155,7 @@ function runPageLeaveAnimation(current, next) {
 
 function runPageEnterAnimation(next){
   const panel = document.querySelector('[data-transition-panel]');
+  const border = document.querySelector('[data-transition-border]');
   const namespace = next.getAttribute("data-barba-namespace");
 
   const tl = gsap.timeline();
@@ -163,10 +177,17 @@ function runPageEnterAnimation(next){
   }, "startEnter");
 
   // Hide the panel
-  tl.set(panel, { 
-    autoAlpha: 0, 
-    yPercent: 100, 
-    y: 0 
+  tl.set(panel, {
+    autoAlpha: 0,
+    yPercent: 100,
+    y: 0
+  }, "startEnter");
+
+  // Hide the border and move it back to its leave-animation start position.
+  tl.set(border, {
+    autoAlpha: 0,
+    yPercent: -100,
+    y: 0
   }, "startEnter");
 
   // Home only
