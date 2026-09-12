@@ -131,16 +131,16 @@ function runPageLeaveAnimation(current, next) {
   tl.to(scaleContainer, {
      scale: 0.95,
      opacity: 0.7,
-     duration: 0.8,
-     ease: "power3.inOut"
+     duration: 0.9,
+     ease: "power4.inOut"
     }, 0)
 
   tl.fromTo(border, {
     yPercent: -100,
   }, {
     yPercent: 0,
-    duration: 0.8,
-    ease: "power3.inOut"
+    duration: 0.9,
+    ease: "power4.inOut"
   }, 0)
 
   tl.fromTo(panel, {
@@ -148,9 +148,9 @@ function runPageLeaveAnimation(current, next) {
     y: 0
   }, {
     yPercent: 0,
-    duration: 1,
-    ease: "power3.out"
-  }, "<+=0.3")
+    duration: 0.9,
+    ease: "power4.out"
+  }, "<+=0.1")
 
   return tl;
 }
