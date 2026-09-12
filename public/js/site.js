@@ -118,6 +118,16 @@ function runPageLeaveAnimation(current, next) {
     autoAlpha: 1
   }, 0)
 
+  // Pivot the scale-down around whatever is currently centred in the viewport
+  // (not the box's own centre) so long, scrolled pages shrink evenly without
+  // needing to touch height/overflow — that's what caused the scroll jump.
+  if (scaleContainer) {
+    const rect = scaleContainer.getBoundingClientRect();
+    gsap.set(scaleContainer, {
+      transformOrigin: `50% ${-rect.top + window.innerHeight / 2}px`,
+    });
+  }
+
   tl.to(scaleContainer, {
      scale: 0.9,
      y: "5vh",
