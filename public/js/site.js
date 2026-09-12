@@ -106,31 +106,11 @@ function runPageLeaveAnimation(current, next) {
     return tl.set(current, { autoAlpha: 0 });
   }
 
-  // Freeze the outgoing page at its current scroll position so the
-  // shrink-down effect always frames exactly one viewport, even on a
-  // long page that was scrolled far from the top.
-  const scrollY = window.scrollY;
-  if (lenis && typeof lenis.stop === "function") {
-    lenis.stop();
-  }
-
-  tl.set(current, {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0
-  }, 0)
 
   tl.set(scaleContainer, {
     height: "100svh",
     overflow: "hidden"
   }, 0)
-
-  if (scaleContent) {
-    tl.set(scaleContent, {
-      y: -scrollY
-    }, 0)
-  }
 
   tl.set(next,{
     autoAlpha: 0
