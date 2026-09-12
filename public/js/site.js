@@ -114,14 +114,14 @@ function runPageLeaveAnimation(current, next) {
   }, 0)
   
   tl.to(current, {
-     y: "-15vh",
+     y: "10vh",
      opacity: 0.9,
      duration: 0.8,
      ease: "power3.inOut"
     }, 0)
 
   tl.to(scaleContainer, {
-     scale: 0.95,
+     scale: 0.96,
      duration: 0.8,
      ease: "power3.inOut"
     }, 0)
