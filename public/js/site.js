@@ -233,6 +233,65 @@ function runPageEnterAnimation(next){
   });
 }
 
+function runHomeEnterAnimation(next){
+  const panel = document.querySelector('[data-transition-panel]');
+  const border = document.querySelector('[data-transition-border]');
+
+  const tl = gsap.timeline();
+
+  if (reducedMotion) {
+    // Immediate swap behavior if user prefers reduced motion
+    tl.set(next, { autoAlpha: 1 });
+    tl.add("pageReady")
+    tl.call(resetPage, [next], "pageReady");
+    return new Promise(resolve => tl.call(resolve, null, "pageReady"));
+  }
+
+  tl.add("startEnter", 1.4);
+
+  tl.fromTo(next, {
+    autoAlpha: 0,
+  },{
+    autoAlpha: 1,
+  }, "startEnter");
+
+  // Hide the panel
+  tl.set(panel, {
+    autoAlpha: 0,
+    yPercent: 100,
+    y: 0
+  }, "startEnter");
+
+  // Hide the border and move it back to its leave-animation start position.
+  tl.set(border, {
+    autoAlpha: 0,
+    yPercent: -100,
+    y: 0
+  }, "startEnter");
+
+  tl.call(() => {
+    initHomeSlider();
+    const slides = Array.from(next.querySelectorAll(".slide-track .slide")).filter((s) => {
+      const r = s.getBoundingClientRect();
+      return r.right > 0 && r.left < window.innerWidth;
+    });
+    gsap.from(slides, {
+      y: 500,
+      autoAlpha: 0,
+      duration: 0.9,
+      ease: "power3.out",
+      stagger: 0.1,
+    });
+  }, null, "startEnter");
+
+  tl.add("pageReady");
+  tl.call(resetPage, [next], "pageReady");
+
+  return new Promise(resolve => {
+    tl.call(resolve, null, "pageReady");
+  });
+}
+
 function runCaseEnterAnimation(next){
   const panel = document.querySelector('[data-transition-panel]');
   const border = document.querySelector('[data-transition-border]');
@@ -368,6 +427,28 @@ barba.init({
   timeout: 7000,
   preventRunning: true,
   transitions: [
+    {
+      name: "home",
+      to: { namespace: ["home"] },
+      sync: true,
+      
+      // First load
+      async once(data) {
+        initOnceFunctions();
+
+        return runPageOnceAnimation(data.next.container);
+      },
+
+      // Current page leaves
+      async leave(data) {
+        return runPageLeaveAnimation(data.current.container, data.next.container);
+      },
+
+      // New page enters
+      async enter(data) {
+        return runHomeEnterAnimation(data.next.container);
+      }
+    },
     {
       name: "default",
       sync: true,
