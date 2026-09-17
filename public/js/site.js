@@ -255,14 +255,12 @@ function runHomeEnterAnimation(next){
     autoAlpha: 1,
   }, "startEnter");
 
-  // Hide the panel
   tl.set(panel, {
     autoAlpha: 0,
     yPercent: 100,
     y: 0
   }, "startEnter");
 
-  // Hide the border and move it back to its leave-animation start position.
   tl.set(border, {
     autoAlpha: 0,
     yPercent: -100,
