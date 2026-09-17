@@ -251,7 +251,7 @@ function runHomeEnterAnimation(next){
 
   tl.set(next, {
     autoAlpha: 1,
-  }, "startEnter");
+  }, "startEnter-=0.5");
 
   tl.set(panel, {
     autoAlpha: 0,
