@@ -144,7 +144,7 @@ function runPageLeaveAnimation(current, next) {
   }, {
     yPercent: 0,
     duration: 0.8,
-    ease: "power3.inOut"
+    ease: "expo.out"
   }, "<+=0.2")
 
   return tl;
