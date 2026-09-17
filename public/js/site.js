@@ -124,8 +124,8 @@ function runPageLeaveAnimation(current, next) {
   });
 
   tl.to(scaleContainer, {
-     scale: 0.95,
-     opacity: 0.7,
+     scale: 0.97,
+     opacity: 0.9,
      duration: 0.8,
      ease: "power2.inOut"
     }, 0)
