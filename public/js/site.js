@@ -143,8 +143,8 @@ function runPageLeaveAnimation(current, next) {
     y: 0
   }, {
     yPercent: 0,
-    duration: 0.8,
-    ease: "expo.out"
+    duration: 0.6,
+    ease: "power3.out"
   }, "<+=0.2")
 
   return tl;
@@ -247,11 +247,7 @@ function runHomeEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  tl.add("startEnter", 0.2);
-
-  tl.set(next, {
-    autoAlpha: 1,
-  }, "startEnter");
+  tl.add("startEnter", 0.8);
 
   tl.set(panel, {
     autoAlpha: 0,
@@ -265,6 +261,11 @@ function runHomeEnterAnimation(next){
     y: 0
   }, "startEnter");
 
+  tl.set(next, {
+    autoAlpha: 1,
+  }, "startEnter");
+
+
   tl.call(() => {
     initHomeSlider();
     const slides = Array.from(next.querySelectorAll(".slide-track .slide")).filter((s) => {
@@ -272,9 +273,9 @@ function runHomeEnterAnimation(next){
       return r.right > 0 && r.left < window.innerWidth;
     });
     gsap.from(slides, {
-      y: 800,
+      y: 500,
       autoAlpha: 0,
-      duration: 0.7,
+      duration: 0.8,
       ease: "power4.out",
       stagger: 0.08,
     });
