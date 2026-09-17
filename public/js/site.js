@@ -247,7 +247,7 @@ function runHomeEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  tl.add("startEnter", 1);
+  tl.add("startEnter", 0.7);
 
   tl.set(next, {
     autoAlpha: 1,
@@ -272,11 +272,11 @@ function runHomeEnterAnimation(next){
       return r.right > 0 && r.left < window.innerWidth;
     });
     gsap.from(slides, {
-      y: 500,
+      y: 800,
       autoAlpha: 0,
-      duration: 0.9,
-      ease: "power3.out",
-      stagger: 0.1,
+      duration: 0.7,
+      ease: "power4.out",
+      stagger: 0.08,
     });
   }, null, "startEnter");
 
