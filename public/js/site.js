@@ -247,13 +247,13 @@ function runHomeEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  tl.add("startEnter", 0.7);
+  tl.add("startEnter", 1);
 
   tl.set(next, {
     autoAlpha: 1,
     overwrite: "auto",
     immediateRender: false,
-  }, "startEnter-=0.5");
+  }, "startEnter-=0.3");
 
   tl.set(panel, {
     autoAlpha: 0,
