@@ -456,6 +456,28 @@ barba.init({
       }
     },
     {
+      name: "case",
+      to: { namespace: ["case"] },
+      sync: true,
+      
+      // First load
+      async once(data) {
+        initOnceFunctions();
+
+        return runPageOnceAnimation(data.next.container);
+      },
+
+      // Current page leaves
+      async leave(data) {
+        return runPageLeaveAnimation(data.current.container, data.next.container);
+      },
+
+      // New page enters
+      async enter(data) {
+        return runCaseEnterAnimation(data.next.container);
+      }
+    },
+    {
       name: "default",
       sync: true,
       
