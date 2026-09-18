@@ -626,9 +626,9 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
 
 // Global text reveals
 const splitConfig = {
-  lines: { duration: 0.8, stagger: 0.08 },
-  words: { duration: 0.6, stagger: 0.06 },
-  chars: { duration: 0.4, stagger: 0.01 }
+  lines: { duration: 1.2, stagger: 0.08 },
+  words: { duration: 0.8, stagger: 0.06 },
+  chars: { duration: 0.8, stagger: 0.05 }
 }
 
 function initMaskTextScrollReveal() {
@@ -656,7 +656,7 @@ function initMaskTextScrollReveal() {
           yPercent: 110,
           duration: config.duration,
           stagger: config.stagger,
-          ease: 'expo.out',
+          ease: 'power4.out',
           scrollTrigger: {
             trigger: heading,
             start: 'clamp(top 80%)',
