@@ -381,6 +381,74 @@ function runCaseEnterAnimation(next){
   });
 }
 
+function runAboutEnterAnimation(next){
+  const panel = document.querySelector('[data-transition-panel]');
+  const border = document.querySelector('[data-transition-border]');
+
+  const titles = next.querySelectorAll('[data-load-case="title"]');
+  const mediaMasks = next.querySelectorAll('[data-load-case="media-mask"]');
+
+  const titleChars = [];
+  titles.forEach((el) => {
+    const split = new SplitText(el, { type: "chars", mask: "chars" });
+    titleChars.push(...split.chars);
+  });
+
+  const tl = gsap.timeline();
+
+  if (reducedMotion) {
+    // Immediate swap behavior if user prefers reduced motion
+    tl.set(next, { autoAlpha: 1 });
+    tl.add("pageReady")
+    tl.call(resetPage, [next], "pageReady");
+    return new Promise(resolve => tl.call(resolve, null, "pageReady"));
+  }
+
+  tl.add("startEnter", 1);
+
+  tl.set(panel, {
+    autoAlpha: 0,
+    yPercent: 100,
+    y: 0
+  }, "startEnter");
+
+  tl.set(border, {
+    autoAlpha: 0,
+    yPercent: -100,
+    y: 0
+  }, "startEnter");
+
+  tl.set(next, {
+    autoAlpha: 1,
+  }, "startEnter");
+
+  tl.set(titleChars, { yPercent: 110 }, "startEnter");
+
+  tl.set(mediaMasks, { clipPath: "inset(100% 0% 0% 0%)" }, "startEnter");
+
+
+  tl.add("pageReady");
+  tl.call(resetPage, [next], "pageReady");
+
+  // Title
+  tl.to(titleChars, {
+    yPercent: 0,
+    duration: 1,
+    ease: "power4.out",
+    stagger: 0.02,
+  }, "startEnter");
+
+  // Media-Mask
+  tl.to(mediaMasks, {
+    clipPath: "inset(0% 0% 0% 0%)",
+    duration: 1.4,
+    ease: "power4.out",
+  }, "startEnter+=0.1");
+
+  return new Promise(resolve => {
+    tl.call(resolve, null, "pageReady");
+  });
+}
 
 // -----------------------------------------
 // BARBA HOOKS + INIT
@@ -475,6 +543,28 @@ barba.init({
       // New page enters
       async enter(data) {
         return runCaseEnterAnimation(data.next.container);
+      }
+    },
+    {
+      name: "about",
+      to: { namespace: ["about"] },
+      sync: true,
+      
+      // First load
+      async once(data) {
+        initOnceFunctions();
+
+        return runPageOnceAnimation(data.next.container);
+      },
+
+      // Current page leaves
+      async leave(data) {
+        return runPageLeaveAnimation(data.current.container, data.next.container);
+      },
+
+      // New page enters
+      async enter(data) {
+        return runAboutEnterAnimation(data.next.container);
       }
     },
     {
