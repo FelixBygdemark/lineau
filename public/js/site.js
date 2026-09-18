@@ -300,7 +300,7 @@ function runHomeEnterAnimation(next){
       ease: "power4.out",
       stagger: 0.06,
     });
-  }, null, "startEnter");
+  }, null, "startEnter+=0.8");
 
   tl.add("pageReady");
   tl.call(resetPage, [next], "pageReady");
