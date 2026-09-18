@@ -315,7 +315,15 @@ function runHomeEnterAnimation(next){
 function runCaseEnterAnimation(next){
   const panel = document.querySelector('[data-transition-panel]');
   const border = document.querySelector('[data-transition-border]');
-  const namespace = next.getAttribute("data-barba-namespace");
+
+  const titles = next.querySelectorAll('[data-load-case="title"]');
+  const mediaMasks = next.querySelectorAll('[data-load-case="media-mask"]');
+
+  const titleChars = [];
+  titles.forEach((el) => {
+    const split = new SplitText(el, { type: "chars", mask: "chars" });
+    titleChars.push(...split.chars);
+  });
 
   const tl = gsap.timeline();
 
@@ -327,68 +335,48 @@ function runCaseEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  tl.add("startEnter", 1.4);
+  tl.add("startEnter", 0.9);
 
-  tl.fromTo(next, {
-    autoAlpha: 0,
-  },{
-    autoAlpha: 1,
-  }, "startEnter");
-
-  // Hide the panel
   tl.set(panel, {
     autoAlpha: 0,
     yPercent: 100,
     y: 0
   }, "startEnter");
 
-  // Hide the border and move it back to its leave-animation start position.
   tl.set(border, {
     autoAlpha: 0,
     yPercent: -100,
     y: 0
   }, "startEnter");
 
-  // Home only
-  if (namespace === "home") {
-    tl.call(() => {
-      initHomeSlider();
-      const slides = Array.from(next.querySelectorAll(".slide-track .slide")).filter((s) => {
-        const r = s.getBoundingClientRect();
-        return r.right > 0 && r.left < window.innerWidth;
-      });
-      gsap.from(slides, {
-        y: 500,
-        autoAlpha: 0,
-        duration: 0.9,
-        ease: "power3.out",
-        stagger: 0.1,
-      });
-    }, null, "startEnter");
-  }
+  tl.set(next, {
+    autoAlpha: 1,
+  }, "startEnter");
 
-  // Case only
-  if (namespace === "case") {
-    const titles = next.querySelectorAll('[data-load-case="title"]');
+  tl.set(titleChars, { yPercent: 110 }, "startEnter");
 
-    // Hard-hide now (synchronous, before first paint) so there's no flash.
-    gsap.set(titles, { yPercent: 110 });
+  // Webflow's resting state for the mask is inset(0% 0% 0% 0%) (fully
+  // visible) -- set it fully clipped from the top first, before the reveal.
+  tl.set(mediaMasks, { clipPath: "inset(100% 0% 0% 0%)" }, "startEnter");
 
-    tl.to(titles, {
-      yPercent: 0,
-      duration: 0.9,
-      ease: "power3.out",
-      stagger: 0.08,
-    }, "startEnter");
-
-    tl.fromTo(next.querySelectorAll('[data-load-case="media-mask"]'),
-      { yPercent: 0 },
-      { yPercent: -105, duration: 0.9, ease: "power3.inOut" },
-      "<+=0.3");
-  }
 
   tl.add("pageReady");
   tl.call(resetPage, [next], "pageReady");
+
+  // Added after pageReady is locked in above, so these don't push the
+  // Promise's resolve time out to wait for the reveals to finish.
+  tl.to(titleChars, {
+    yPercent: 0,
+    duration: 1,
+    ease: "power4.out",
+    stagger: 0.02,
+  }, "startEnter");
+
+  tl.to(mediaMasks, {
+    clipPath: "inset(0% 0% 0% 0%)",
+    duration: 1,
+    ease: "power4.out",
+  }, "startEnter");
 
   return new Promise(resolve => {
     tl.call(resolve, null, "pageReady");
