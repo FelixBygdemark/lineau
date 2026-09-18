@@ -372,9 +372,9 @@ function runCaseEnterAnimation(next){
   // Media-Mask
   tl.to(mediaMasks, {
     clipPath: "inset(0% 0% 0% 0%)",
-    duration: 1,
+    duration: 1.4,
     ease: "power4.out",
-  }, "startEnter");
+  }, "startEnter+=0.3");
 
   return new Promise(resolve => {
     tl.call(resolve, null, "pageReady");
