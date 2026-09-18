@@ -126,7 +126,7 @@ function runPageLeaveAnimation(current, next) {
   tl.to(scaleContainer, {
      scale: 0.97,
      opacity: 0.9,
-     duration: 0.8,
+     duration: 0.85,
      ease: "power2.inOut"
     }, 0)
 
@@ -134,7 +134,7 @@ function runPageLeaveAnimation(current, next) {
     yPercent: -100,
   }, {
     yPercent: 0,
-    duration: 0.8,
+    duration: 0.85,
     ease: "power2.inOut"
   }, "<")
 
@@ -143,9 +143,9 @@ function runPageLeaveAnimation(current, next) {
     y: 0
   }, {
     yPercent: 0,
-    duration: 0.6,
+    duration: 0.85,
     ease: "power3.out"
-  }, "<+=0.2")
+  }, "<+=0.1")
 
   return tl;
 }
@@ -253,7 +253,7 @@ function runHomeEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  tl.add("startEnter", 0.9);
+  tl.add("startEnter", 1);
 
   tl.set(panel, {
     autoAlpha: 0,
@@ -335,7 +335,7 @@ function runCaseEnterAnimation(next){
     return new Promise(resolve => tl.call(resolve, null, "pageReady"));
   }
 
-  tl.add("startEnter", 0.9);
+  tl.add("startEnter", 1);
 
   tl.set(panel, {
     autoAlpha: 0,
