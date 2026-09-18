@@ -266,6 +266,7 @@ function runHomeEnterAnimation(next){
   }, "startEnter");
 
 
+  // Slider
   tl.call(() => {
     initHomeSlider();
     const slides = Array.from(next.querySelectorAll(".slide-track .slide")).filter((s) => {
@@ -286,7 +287,7 @@ function runHomeEnterAnimation(next){
       { scale: 1, duration: 1.2, ease: "power4.out", stagger: 0.08 }
     );
 
-    // Title: SplitText by lines with the built-in mask, yPercent 110 -> 0.
+    // Title
     const titleLines = [];
     next.querySelectorAll('[data-load-home="title"]').forEach((el) => {
       const split = new SplitText(el, { type: "lines", mask: "lines" });
@@ -296,7 +297,7 @@ function runHomeEnterAnimation(next){
     gsap.to(titleLines, {
       yPercent: 0,
       duration: 1,
-      ease: "power3.out",
+      ease: "power4.out",
       stagger: 0.06,
     });
   }, null, "startEnter");
