@@ -435,15 +435,15 @@ function runAboutEnterAnimation(next){
     yPercent: 0,
     duration: 1,
     ease: "power4.out",
-    stagger: 0.02,
+    stagger: 0.01,
   }, "startEnter");
 
   // Media-Mask
   tl.to(mediaMasks, {
     clipPath: "inset(0% 0% 0% 0%)",
-    duration: 1.4,
+    duration: 1.1,
     ease: "power4.out",
-  }, "startEnter+=0.1");
+  }, "startEnter");
 
   return new Promise(resolve => {
     tl.call(resolve, null, "pageReady");
