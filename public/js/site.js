@@ -237,6 +237,12 @@ function runHomeEnterAnimation(next){
   const panel = document.querySelector('[data-transition-panel]');
   const border = document.querySelector('[data-transition-border]');
 
+  const titleLines = [];
+  next.querySelectorAll('[data-load-home="title"]').forEach((el) => {
+    const split = new SplitText(el, { type: "lines", mask: "lines" });
+    titleLines.push(...split.lines);
+  });
+
   const tl = gsap.timeline();
 
   if (reducedMotion) {
@@ -265,6 +271,8 @@ function runHomeEnterAnimation(next){
     autoAlpha: 1,
   }, "startEnter");
 
+  tl.set(titleLines, { yPercent: 110 }, "startEnter");
+
 
   // Slider
   tl.call(() => {
@@ -286,24 +294,19 @@ function runHomeEnterAnimation(next){
       { scale: 1.5 },
       { scale: 1, duration: 1.2, ease: "power4.out", stagger: 0.08 }
     );
-
-    // Title
-    const titleLines = [];
-    next.querySelectorAll('[data-load-home="title"]').forEach((el) => {
-      const split = new SplitText(el, { type: "lines", mask: "lines" });
-      titleLines.push(...split.lines);
-    });
-    gsap.set(titleLines, { yPercent: 110 });
-    gsap.to(titleLines, {
-      yPercent: 0,
-      duration: 1,
-      ease: "power4.out",
-      stagger: 0.06,
-    });
-  }, null, "startEnter+=0.8");
+  }, null, "startEnter");
 
   tl.add("pageReady");
   tl.call(resetPage, [next], "pageReady");
+
+  // Added after pageReady is locked in above, so this doesn't push the
+  // Promise's resolve time out to wait for the title reveal to finish.
+  tl.to(titleLines, {
+    yPercent: 0,
+    duration: 1,
+    ease: "power4.out",
+    stagger: 0.06,
+  }, "startEnter");
 
   return new Promise(resolve => {
     tl.call(resolve, null, "pageReady");
