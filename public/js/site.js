@@ -374,7 +374,7 @@ function runCaseEnterAnimation(next){
     clipPath: "inset(0% 0% 0% 0%)",
     duration: 1.4,
     ease: "power4.out",
-  }, "startEnter+=0.3");
+  }, "startEnter+=0.1");
 
   return new Promise(resolve => {
     tl.call(resolve, null, "pageReady");
