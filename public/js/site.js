@@ -287,26 +287,25 @@ function runHomeEnterAnimation(next){
 
     gsap.fromTo(clipTargets,
       { clipPath: "inset(100% 0% 0% 0%)" },
-      { clipPath: "inset(0% 0% 0% 0%)", duration: 1.2, ease: "power4.out", stagger: 0.08 }
+      { clipPath: "inset(0% 0% 0% 0%)", duration: 1.6, ease: "power4.out", stagger: 0.08 }
     );
 
     gsap.fromTo(scaleTargets,
       { scale: 1.5 },
-      { scale: 1, duration: 1.2, ease: "power4.out", stagger: 0.08 }
+      { scale: 1, duration: 1.6, ease: "power4.out", stagger: 0.08 }
     );
   }, null, "startEnter");
 
   tl.add("pageReady");
   tl.call(resetPage, [next], "pageReady");
 
-  // Added after pageReady is locked in above, so this doesn't push the
-  // Promise's resolve time out to wait for the title reveal to finish.
+  // Title
   tl.to(titleLines, {
     yPercent: 0,
     duration: 1,
     ease: "power4.out",
     stagger: 0.06,
-  }, "startEnter");
+  }, "startEnter+=1");
 
   return new Promise(resolve => {
     tl.call(resolve, null, "pageReady");
