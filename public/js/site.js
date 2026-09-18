@@ -272,13 +272,23 @@ function runHomeEnterAnimation(next){
       const r = s.getBoundingClientRect();
       return r.right > 0 && r.left < window.innerWidth;
     });
-    gsap.from(slides, {
-      y: 500,
-      autoAlpha: 0,
-      duration: 0.8,
-      ease: "power4.out",
-      stagger: 0.08,
-    });
+
+    // Two child-level reveals per slide instead of moving the card itself:
+    // the mask (.slide-image) wipes open bottom-to-top, the photo
+    // (.slide-image-scale) settles from 1.5x down to 1x behind it. Both
+    // built from the same on-screen slide list so they stay paired per slide.
+    const clipTargets = slides.map((s) => s.querySelector(".slide-image"));
+    const scaleTargets = slides.map((s) => s.querySelector(".slide-image-scale"));
+
+    gsap.fromTo(clipTargets,
+      { clipPath: "inset(100% 0% 0% 0%)" },
+      { clipPath: "inset(0% 0% 0% 0%)", duration: 0.9, ease: "power3.out", stagger: 0.08 }
+    );
+
+    gsap.fromTo(scaleTargets,
+      { scale: 1.5 },
+      { scale: 1, duration: 0.9, ease: "power3.out", stagger: 0.08 }
+    );
   }, null, "startEnter");
 
   tl.add("pageReady");
