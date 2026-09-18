@@ -355,16 +355,13 @@ function runCaseEnterAnimation(next){
 
   tl.set(titleChars, { yPercent: 110 }, "startEnter");
 
-  // Webflow's resting state for the mask is inset(0% 0% 0% 0%) (fully
-  // visible) -- set it fully clipped from the top first, before the reveal.
   tl.set(mediaMasks, { clipPath: "inset(100% 0% 0% 0%)" }, "startEnter");
 
 
   tl.add("pageReady");
   tl.call(resetPage, [next], "pageReady");
 
-  // Added after pageReady is locked in above, so these don't push the
-  // Promise's resolve time out to wait for the reveals to finish.
+  // Title
   tl.to(titleChars, {
     yPercent: 0,
     duration: 1,
@@ -372,6 +369,7 @@ function runCaseEnterAnimation(next){
     stagger: 0.02,
   }, "startEnter");
 
+  // Media-Mask
   tl.to(mediaMasks, {
     clipPath: "inset(0% 0% 0% 0%)",
     duration: 1,
