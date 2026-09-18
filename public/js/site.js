@@ -285,6 +285,20 @@ function runHomeEnterAnimation(next){
       { scale: 1.5 },
       { scale: 1, duration: 1.2, ease: "power4.out", stagger: 0.08 }
     );
+
+    // Title: SplitText by lines with the built-in mask, yPercent 110 -> 0.
+    const titleLines = [];
+    next.querySelectorAll('[data-load-home="title"]').forEach((el) => {
+      const split = new SplitText(el, { type: "lines", mask: "lines" });
+      titleLines.push(...split.lines);
+    });
+    gsap.set(titleLines, { yPercent: 110 });
+    gsap.to(titleLines, {
+      yPercent: 0,
+      duration: 1,
+      ease: "power3.out",
+      stagger: 0.06,
+    });
   }, null, "startEnter");
 
   tl.add("pageReady");
