@@ -287,12 +287,12 @@ function runHomeEnterAnimation(next){
 
     gsap.fromTo(clipTargets,
       { clipPath: "inset(100% 0% 0% 0%)" },
-      { clipPath: "inset(0% 0% 0% 0%)", duration: 1.6, ease: "power4.out", stagger: 0.08 }
+      { clipPath: "inset(0% 0% 0% 0%)", duration: 1.4, ease: "power4.out", stagger: 0.08 }
     );
 
     gsap.fromTo(scaleTargets,
       { scale: 1.5 },
-      { scale: 1, duration: 1.6, ease: "power4.out", stagger: 0.08 }
+      { scale: 1, duration: 1.4, ease: "power4.out", stagger: 0.08 }
     );
   }, null, "startEnter");
 
@@ -305,7 +305,7 @@ function runHomeEnterAnimation(next){
     duration: 1,
     ease: "power4.out",
     stagger: 0.06,
-  }, "startEnter+=1");
+  }, "startEnter+=0.4");
 
   return new Promise(resolve => {
     tl.call(resolve, null, "pageReady");
