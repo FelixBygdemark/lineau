@@ -554,7 +554,7 @@ barba.init({
       async once(data) {
         initOnceFunctions();
 
-        return runPageOnceAnimation(data.next.container);
+        return runAboutEnterAnimation(data.next.container);
       },
 
       // Current page leaves
