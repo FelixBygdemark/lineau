@@ -1864,8 +1864,8 @@ function initHomeSlider() {
     BOW: 0.30, // dome depth — 0 = flat, tune live
     BULGE: 0.10, // mouse-bulge strength
     REACH: 300, // mouse-bulge falloff radius, px
-    CURSOR_LERP: 0.12, // cursor-follow smoothing
-    CALM_DIVISOR: 200, // higher = bulge survives faster drags
+    CURSOR_LERP: 0.40, // cursor-follow smoothing
+    CALM_DIVISOR: 800, // higher = bulge survives faster drags
   };
 
   const state = {
