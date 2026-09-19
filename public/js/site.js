@@ -1876,12 +1876,6 @@ function initHomeSlider() {
     hasActuallyDragged: false,
   };
 
-  // Frame-rate-independent smoothing (from the dome-grid reference) — the
-  // same LERP_FACTOR behaves identically to the old naive lerp at 60fps,
-  // but stays consistent at other refresh rates / under frame drops.
-  const damp = (from, to, rate, dt) => from + (to - from) * (1 - Math.pow(1 - rate, dt * 60));
-  let prevTime = performance.now();
-
   // Title-reveal hover animation is hover-only — on touch devices the
   // title just stays visible via .slide-overlay's base opacity: 1 in CSS.
   const supportsHover = window.matchMedia("(hover: hover)").matches;
@@ -1988,11 +1982,8 @@ function initHomeSlider() {
     });
   }
 
-  function animate(time) {
-    const dt = Math.min((time - prevTime) / 1000, 1 / 30);
-    prevTime = time;
-
-    state.currentX = damp(state.currentX, state.targetX, config.LERP_FACTOR, dt);
+  function animate() {
+    state.currentX += (state.targetX - state.currentX) * config.LERP_FACTOR;
 
     updateSlidePositions();
     updateParallax();
@@ -2097,7 +2088,7 @@ function initHomeSlider() {
   document.addEventListener("mouseup", handleMouseUp);
   window.addEventListener("resize", handleResize);
 
-  requestAnimationFrame(animate); // not a direct call — animate(time) needs a real rAF timestamp on frame 1, or dt is NaN and poisons state.currentX forever
+  animate();
   });
 }
 
