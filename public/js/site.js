@@ -1861,9 +1861,6 @@ function initHomeSlider() {
     LERP_FACTOR: 0.05,
     MAX_VELOCITY: 150,
     LOOP_COPIES: 6,
-    MAX_ROTATE: 7,       // deg of rotationY at the edge of the viewport
-    BULGE_AMOUNT: 0.08,   // extra scale at dead center (1 + this)
-    MAX_PUSH_BACK: 40,    // px of translateZ (recede) at the edge
   };
 
   const state = {
@@ -1882,9 +1879,6 @@ function initHomeSlider() {
   // Title-reveal hover animation is hover-only — on touch devices the
   // title just stays visible via .slide-overlay's base opacity: 1 in CSS.
   const supportsHover = window.matchMedia("(hover: hover)").matches;
-
-  // Reused every frame in updateParallax() for the coverflow rotate/bulge.
-  const clampNorm = gsap.utils.clamp(-1, 1);
 
   function setupTitleHover(slide) {
     if (!supportsHover) return;
@@ -1985,18 +1979,6 @@ function initHomeSlider() {
       // (.home-slider-image: left: 50%); -50% here re-applies that
       // centering since setting .transform overwrites any CSS transform.
       img.style.transform = `translateX(calc(-50% + ${parallaxOffset}px))`;
-
-      // Coverflow tilt/bulge — same distanceFromCenter, applied to the card
-      // itself via gsap.set() (not a raw .style.transform write) so the
-      // existing CSS translateY(-50%) centering on .slide composes
-      // correctly instead of being wiped out. .slider's CSS `perspective`
-      // is what turns rotationY into real depth rather than a flat skew.
-      const norm = clampNorm(distanceFromCenter / viewportCenter);
-      gsap.set(slide, {
-        rotationY: norm * config.MAX_ROTATE,
-        scale: 1 + (1 - Math.abs(norm)) * config.BULGE_AMOUNT,
-        z: -Math.abs(norm) * config.MAX_PUSH_BACK,
-      });
     });
   }
 
