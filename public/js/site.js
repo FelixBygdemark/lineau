@@ -96,6 +96,7 @@ function runPageLeaveAnimation(current, next) {
   const panel = document.querySelector('[data-transition-panel]');
   const border = document.querySelector('[data-transition-border]');
   const rect = scaleContainer.getBoundingClientRect();
+  const navlink = document.querySelector('[data-nav-load]');
 
   const tl = gsap.timeline({
     onComplete: () => { current.remove() }
@@ -146,6 +147,16 @@ function runPageLeaveAnimation(current, next) {
     duration: 0.85,
     ease: "power3.out"
   }, "<+=0.1")
+
+  tl.fromTo(navlink, {
+    yPercent: 0,
+  }, {
+    yPercent: -110,
+    duration: 0.4,
+    ease: "power3.inOut"
+  }, 0)
+
+
 
   return tl;
 }
