@@ -1858,15 +1858,25 @@ function initHomeSlider() {
 
   const config = {
     SCROLL_SPEED: 2,
-    LERP_FACTOR: 0.05,
+    LERP_FACTOR: 0.05, // damp() rate, not a naive multiply factor -- see animate()
     MAX_VELOCITY: 150,
     LOOP_COPIES: 6,
     BOW: 0.30, // dome depth — 0 = flat, tune live
     BULGE: 0.15, // mouse-bulge strength
     REACH: 500, // mouse-bulge falloff radius, px
-    CURSOR_LERP: 0.1, // cursor-follow smoothing
-    CALM_DIVISOR: 100, // higher = bulge survives faster drags
+    CURSOR_LERP: 0.1, // damp() rate for cursor-follow
+    CALM_DIVISOR: 40, // matches the dome-grid reference; lower = bulge backs off harder while moving
+    CALM_LERP: 0.08, // damp() rate for the bulge INTENSITY itself, not just its inputs
   };
+
+  // Frame-rate-independent damping (Jesper Landberg's dome-grid reference:
+  // https://grid-no-webgl.jesperlandberg.com/) -- at a steady 60fps this is
+  // mathematically identical to the old `current += (target-current)*rate`
+  // naive lerp with the same rate, so existing tuned constants above carry
+  // over unchanged; it only differs (for the better) at other refresh rates
+  // or under frame drops.
+  const damp = (from, to, rate, dt) => from + (to - from) * (1 - Math.pow(1 - rate, dt * 60));
+  let prevTime = null;
 
   const state = {
     currentX: 0,
@@ -1883,8 +1893,8 @@ function initHomeSlider() {
     cursorY: 0,
     cursorTargetX: 0,
     cursorTargetY: 0,
-    bulgeWeight: 0,
-    bulgeWeightTarget: 0,
+    bulgeTarget: 0, // 1 while hovering (hover-capable pointers only), 0 once it leaves
+    bulgeIntensity: 0, // the value actually fed into the warp -- itself damped
   };
 
   // Title-reveal hover animation is hover-only — on touch devices the
@@ -1986,19 +1996,19 @@ function initHomeSlider() {
   // out by a gaussian lens. Returns the corner's ABSOLUTE displacement
   // (warped - raw), not an absolute position — see domeMatrix() below for
   // why that matters.
-  function warpCorner(px, py, calmBulge) {
+  function warpCorner(px, py, bulgeIntensity) {
     const nx = px / (window.innerWidth / 2);
     const ny = py / (window.innerHeight / 2);
     const f = 1 + config.BOW * (nx * nx + ny * ny);
     let wx = px * f;
     let wy = py * f;
 
-    if (calmBulge > 0) {
+    if (bulgeIntensity > 0) {
       const dx = wx - state.cursorX;
       const dy = wy - state.cursorY;
       const push =
         config.BULGE *
-        calmBulge *
+        bulgeIntensity *
         Math.exp(-(dx * dx + dy * dy) / (config.REACH * config.REACH));
       wx += dx * push;
       wy += dy * push;
@@ -2032,12 +2042,6 @@ function initHomeSlider() {
     const viewportCenterX = window.innerWidth / 2;
     const viewportCenterY = window.innerHeight / 2;
 
-    // Fade the bulge out while the slider is moving fast, so the lens
-    // doesn't fight the motion — same "calm" idea as the dome-grid reference.
-    const lag = Math.abs(state.targetX - state.currentX);
-    const calm = 1 / (1 + lag / config.CALM_DIVISOR);
-    const calmBulge = supportsHover ? state.bulgeWeight * calm : 0;
-
     state.slides.forEach(({ el: slide, warp }) => {
       const img = slide.querySelector("img");
       if (!img) return;
@@ -2063,10 +2067,10 @@ function initHomeSlider() {
       const hw = slideRect.width / 2;
       const hh = slideRect.height / 2;
 
-      const dTl = warpCorner(cx - hw, cy - hh, calmBulge);
-      const dTr = warpCorner(cx + hw, cy - hh, calmBulge);
-      const dBl = warpCorner(cx - hw, cy + hh, calmBulge);
-      const dBr = warpCorner(cx + hw, cy + hh, calmBulge);
+      const dTl = warpCorner(cx - hw, cy - hh, state.bulgeIntensity);
+      const dTr = warpCorner(cx + hw, cy - hh, state.bulgeIntensity);
+      const dBl = warpCorner(cx - hw, cy + hh, state.bulgeIntensity);
+      const dBr = warpCorner(cx + hw, cy + hh, state.bulgeIntensity);
 
       const q0 = { x: dTl.x, y: dTl.y };
       const q1 = { x: slideRect.width + dTr.x, y: dTr.y };
@@ -2077,28 +2081,46 @@ function initHomeSlider() {
     });
   }
 
-  function updateCursor() {
+  // Cursor position damps independently of the bulge's actual strength --
+  // `calm` (from how far the slider still has to travel to reach targetX)
+  // is computed fresh each frame, but `bulgeIntensity` itself is a THIRD
+  // damped value chasing `bulgeTarget * calm`, not that product applied
+  // instantly. That extra low-pass filter is what makes the bulge visibly
+  // ease off while dragging/scrolling and ease back in once settled,
+  // instead of snapping frame-to-frame with the raw calm value.
+  function updateCursor(dt) {
     if (!supportsHover) return;
-    state.cursorX += (state.cursorTargetX - state.cursorX) * config.CURSOR_LERP;
-    state.cursorY += (state.cursorTargetY - state.cursorY) * config.CURSOR_LERP;
-    state.bulgeWeight += (state.bulgeWeightTarget - state.bulgeWeight) * config.CURSOR_LERP;
+
+    state.cursorX = damp(state.cursorX, state.cursorTargetX, config.CURSOR_LERP, dt);
+    state.cursorY = damp(state.cursorY, state.cursorTargetY, config.CURSOR_LERP, dt);
+
+    const lag = Math.abs(state.targetX - state.currentX);
+    const calm = 1 / (1 + lag / config.CALM_DIVISOR);
+    state.bulgeIntensity = damp(state.bulgeIntensity, state.bulgeTarget * calm, config.CALM_LERP, dt);
   }
 
   function handleCursorMove(e) {
     state.cursorTargetX = e.clientX - window.innerWidth / 2;
     state.cursorTargetY = e.clientY - window.innerHeight / 2;
-    state.bulgeWeightTarget = 1;
+    state.bulgeTarget = 1;
   }
 
   function handleCursorLeave() {
-    state.bulgeWeightTarget = 0;
+    state.bulgeTarget = 0;
   }
 
-  function animate() {
-    state.currentX += (state.targetX - state.currentX) * config.LERP_FACTOR;
+  // `time` is the rAF timestamp (DOMHighResTimeStamp). `prevTime` starts
+  // `null` so the very first frame uses a safe default dt instead of NaN
+  // from `time - undefined` -- that NaN-poisoning bug is exactly what broke
+  // an earlier dt-based attempt here (see git history on this file).
+  function animate(time) {
+    const dt = prevTime === null ? 1 / 60 : Math.min((time - prevTime) / 1000, 1 / 30);
+    prevTime = time;
+
+    state.currentX = damp(state.currentX, state.targetX, config.LERP_FACTOR, dt);
 
     updateSlidePositions();
-    updateCursor();
+    updateCursor(dt);
     updateCardEffects();
 
     requestAnimationFrame(animate);
@@ -2206,7 +2228,9 @@ function initHomeSlider() {
   document.addEventListener("mouseup", handleMouseUp);
   window.addEventListener("resize", handleResize);
 
-  animate();
+  // Always via rAF, never a bare `animate()` call -- animate() now expects
+  // a real rAF timestamp in `time`, and a direct call would pass `undefined`.
+  requestAnimationFrame(animate);
   });
 }
 
