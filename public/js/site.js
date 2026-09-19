@@ -2097,7 +2097,7 @@ function initHomeSlider() {
   document.addEventListener("mouseup", handleMouseUp);
   window.addEventListener("resize", handleResize);
 
-  animate();
+  requestAnimationFrame(animate); // not a direct call — animate(time) needs a real rAF timestamp on frame 1, or dt is NaN and poisons state.currentX forever
   });
 }
 
