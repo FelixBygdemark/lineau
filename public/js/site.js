@@ -1857,15 +1857,15 @@ function initHomeSlider() {
   const slideCount = originalSlides.length;
 
   const config = {
-    SCROLL_SPEED: 1.75,
+    SCROLL_SPEED: 2,
     LERP_FACTOR: 0.05,
     MAX_VELOCITY: 150,
     LOOP_COPIES: 6,
     BOW: 0.30, // dome depth — 0 = flat, tune live
-    BULGE: 0.10, // mouse-bulge strength
-    REACH: 300, // mouse-bulge falloff radius, px
-    CURSOR_LERP: 0.40, // cursor-follow smoothing
-    CALM_DIVISOR: 800, // higher = bulge survives faster drags
+    BULGE: 0.15, // mouse-bulge strength
+    REACH: 500, // mouse-bulge falloff radius, px
+    CURSOR_LERP: 0.1, // cursor-follow smoothing
+    CALM_DIVISOR: 100, // higher = bulge survives faster drags
   };
 
   const state = {
