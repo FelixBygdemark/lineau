@@ -1861,8 +1861,8 @@ function initHomeSlider() {
     LERP_FACTOR: 0.05,
     MAX_VELOCITY: 150,
     LOOP_COPIES: 6,
-    BOW: 0.15, // dome depth — 0 = flat, tune live
-    BULGE: 0.3, // mouse-bulge strength
+    BOW: 0.50, // dome depth — 0 = flat, tune live
+    BULGE: 0.8, // mouse-bulge strength
     REACH: 400, // mouse-bulge falloff radius, px
     CURSOR_LERP: 0.12, // cursor-follow smoothing
     CALM_DIVISOR: 200, // higher = bulge survives faster drags
