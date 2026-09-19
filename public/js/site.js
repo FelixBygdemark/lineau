@@ -1861,9 +1861,9 @@ function initHomeSlider() {
     LERP_FACTOR: 0.05,
     MAX_VELOCITY: 150,
     LOOP_COPIES: 6,
-    MAX_ROTATE: 30,       // deg of rotationY at the edge of the viewport
-    BULGE_AMOUNT: 0.12,   // extra scale at dead center (1 + this)
-    MAX_PUSH_BACK: 80,    // px of translateZ (recede) at the edge
+    MAX_ROTATE: 7,       // deg of rotationY at the edge of the viewport
+    BULGE_AMOUNT: 0.08,   // extra scale at dead center (1 + this)
+    MAX_PUSH_BACK: 40,    // px of translateZ (recede) at the edge
   };
 
   const state = {
