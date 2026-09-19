@@ -341,3 +341,23 @@
    #151515 so the receding .page-scale drops into a dark frame.
    ================================================================ */
 
+
+/* Home slider — grayscale/dim by default, full colour + opacity on hover.
+   Gated to hover-capable pointers so touch just shows full colour always
+   (matches the title-reveal hover, which does the same via matchMedia).
+   Only filter/opacity transition — never `all` — because .home-slider-image's
+   transform is rewritten every frame by updateParallax() for the pan effect;
+   transitioning transform too would make the pan visibly lag behind the mouse. */
+@media (hover: hover) and (pointer: fine) {
+  .home-slider-image {
+    filter: grayscale(100%);
+    opacity: 0.8;
+    transition: filter 0.4s ease, opacity 0.4s ease;
+  }
+
+  .slide:hover .home-slider-image {
+    filter: grayscale(0%);
+    opacity: 1;
+  }
+}
+
