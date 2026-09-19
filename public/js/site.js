@@ -1861,6 +1861,7 @@ function initHomeSlider() {
     LERP_FACTOR: 0.05,
     MAX_VELOCITY: 150,
     LOOP_COPIES: 6,
+    BOW: 0.15, // dome warp strength, 0 = flat
   };
 
   const state = {
@@ -1875,6 +1876,12 @@ function initHomeSlider() {
     dragDistance: 0,
     hasActuallyDragged: false,
   };
+
+  // Frame-rate-independent smoothing (from the dome-grid reference) — the
+  // same LERP_FACTOR behaves identically to the old naive lerp at 60fps,
+  // but stays consistent at other refresh rates / under frame drops.
+  const damp = (from, to, rate, dt) => from + (to - from) * (1 - Math.pow(1 - rate, dt * 60));
+  let prevTime = performance.now();
 
   // Title-reveal hover animation is hover-only — on touch devices the
   // title just stays visible via .slide-overlay's base opacity: 1 in CSS.
@@ -1932,6 +1939,7 @@ function initHomeSlider() {
     for (let copy = 0; copy < config.LOOP_COPIES; copy++) {
       originalSlides.forEach((slide) => {
         const clone = slide.cloneNode(true);
+        clone.style.transformOrigin = "0 0"; // dome warp below assumes a top-left origin
         track.appendChild(clone);
         state.slides.push(clone);
         setupTitleHover(clone);
@@ -1959,31 +1967,92 @@ function initHomeSlider() {
     track.style.transform = `translate3d(${state.currentX}px, 0, 0)`;
   }
 
+  // Dome warp — adapted from a reference "infinite dome grid" technique.
+  // Each card's 4 corners are individually pushed radially away from
+  // viewport center (bow), then a matrix3d is solved that maps the card's
+  // flat rect onto that (now non-rectangular) quad — true per-corner
+  // distortion, not a rigid rotateY. The perspective divide is baked into
+  // each card's own matrix, so this needs no ancestor `perspective` /
+  // `preserve-3d` (unlike the rigid rotateY/scale/z version we tried and
+  // reverted). Normalized per-axis (cardW/cardH separately, not one shared
+  // divisor) since our cards are 350:500, not square like the reference.
+  function warpCorner(px, py, vcx, vcy) {
+    const nx = px / vcx;
+    const ny = py / vcy;
+    const f = 1 + config.BOW * (nx * nx + ny * ny);
+    return { x: px * f, y: py * f };
+  }
+
+  function domeMatrix(rx, ry, cardW, cardH, q0, q1, q2, q3) {
+    const x0 = q0.x - rx, y0 = q0.y - ry;
+    const x1 = q1.x - rx, y1 = q1.y - ry;
+    const x2 = q2.x - rx, y2 = q2.y - ry;
+    const x3 = q3.x - rx, y3 = q3.y - ry;
+    const dx1 = x1 - x3, dy1 = y1 - y3;
+    const dx2 = x2 - x3, dy2 = y2 - y3;
+    const sx = x0 - x1 - x2 + x3;
+    const sy = y0 - y1 - y2 + y3;
+    const den = dx1 * dy2 - dx2 * dy1;
+    const g = den ? (sx * dy2 - dx2 * sy) / den : 0;
+    const h = den ? (dx1 * sy - sx * dy1) / den : 0;
+    const a = x1 - x0 + g * x1;
+    const b = x2 - x0 + h * x2;
+    const d = y1 - y0 + g * y1;
+    const e = y2 - y0 + h * y2;
+    return `matrix3d(${a / cardW}, ${d / cardW}, 0, ${g / cardW}, ${b / cardH}, ${e / cardH}, 0, ${h / cardH}, 0, 0, 1, 0, ${x0}, ${y0}, 0, 1)`;
+  }
+
   function updateParallax() {
-    const viewportCenter = window.innerWidth / 2;
+    const viewportCenterX = window.innerWidth / 2;
+    const viewportCenterY = window.innerHeight / 2;
+    const trackRect = track.getBoundingClientRect(); // never touched by a per-slide transform
 
     state.slides.forEach((slide) => {
       const img = slide.querySelector("img");
       if (!img) return;
 
-      const slideRect = slide.getBoundingClientRect();
-      if (slideRect.right < -500 || slideRect.left > window.innerWidth + 500) {
+      // offsetLeft/offsetTop/offsetWidth/offsetHeight are layout-only —
+      // unlike getBoundingClientRect(), they ignore the matrix3d we write to
+      // `slide` below, so they don't measure (and compound) our own
+      // previous frame's warp.
+      const slideLeft = trackRect.left + slide.offsetLeft;
+      const slideTop = trackRect.top + slide.offsetTop - slide.offsetHeight / 2; // CSS translateY(-50%)
+      const slideWidth = slide.offsetWidth;
+      const slideHeight = slide.offsetHeight;
+
+      if (slideLeft + slideWidth < -500 || slideLeft > window.innerWidth + 500) {
         return;
       }
 
-      const slideCenter = slideRect.left + slideRect.width / 2;
-      const distanceFromCenter = slideCenter - viewportCenter;
+      const slideCenterX = slideLeft + slideWidth / 2;
+      const slideCenterY = slideTop + slideHeight / 2;
+      const distanceFromCenter = slideCenterX - viewportCenterX;
       const parallaxOffset = distanceFromCenter * -0.25;
 
       // No scale — the image is 225%-wide and pre-centered via CSS
       // (.home-slider-image: left: 50%); -50% here re-applies that
       // centering since setting .transform overwrites any CSS transform.
       img.style.transform = `translateX(calc(-50% + ${parallaxOffset}px))`;
+
+      const ox = slideCenterX - viewportCenterX;
+      const oy = slideCenterY - viewportCenterY;
+      const hw = slideWidth / 2;
+      const hh = slideHeight / 2;
+
+      const tl = warpCorner(ox - hw, oy - hh, viewportCenterX, viewportCenterY);
+      const tr = warpCorner(ox + hw, oy - hh, viewportCenterX, viewportCenterY);
+      const bl = warpCorner(ox - hw, oy + hh, viewportCenterX, viewportCenterY);
+      const br = warpCorner(ox + hw, oy + hh, viewportCenterX, viewportCenterY);
+
+      slide.style.transform = domeMatrix(ox - hw, oy - hh, slideWidth, slideHeight, tl, tr, bl, br);
     });
   }
 
-  function animate() {
-    state.currentX += (state.targetX - state.currentX) * config.LERP_FACTOR;
+  function animate(time) {
+    const dt = Math.min((time - prevTime) / 1000, 1 / 30);
+    prevTime = time;
+
+    state.currentX = damp(state.currentX, state.targetX, config.LERP_FACTOR, dt);
 
     updateSlidePositions();
     updateParallax();
