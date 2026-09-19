@@ -151,9 +151,9 @@ function runPageLeaveAnimation(current, next) {
   tl.fromTo(navlink, {
     yPercent: 0,
   }, {
-    yPercent: -110,
-    duration: 0.4,
-    ease: "power3.inOut"
+    yPercent: -130,
+    duration: 0.6,
+    ease: "power4.in"
   }, 0)
 
 
@@ -247,6 +247,7 @@ function runPageEnterAnimation(next){
 function runHomeEnterAnimation(next){
   const panel = document.querySelector('[data-transition-panel]');
   const border = document.querySelector('[data-transition-border]');
+  const navlink = document.querySelectorAll('[data-nav-load]');
 
   const titleLines = [];
   next.querySelectorAll('[data-load-home="title"]').forEach((el) => {
@@ -280,6 +281,18 @@ function runHomeEnterAnimation(next){
 
   tl.set(next, {
     autoAlpha: 1,
+  }, "startEnter");
+
+  tl.set(navlink, {
+    yPercent: 130,
+  }, "startEnter");
+
+  tl.fromTo(navlink, {
+    yPercent: 130,
+  }, {
+    yPercent: 0,
+    duration: 0.9,
+    ease: "power4.out"
   }, "startEnter");
 
   tl.set(titleLines, { yPercent: 110 }, "startEnter");
