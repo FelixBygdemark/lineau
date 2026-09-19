@@ -96,7 +96,7 @@ function runPageLeaveAnimation(current, next) {
   const panel = document.querySelector('[data-transition-panel]');
   const border = document.querySelector('[data-transition-border]');
   const rect = scaleContainer.getBoundingClientRect();
-  const navlink = document.querySelector('[data-nav-load]');
+  const navlink = document.querySelectorAll('[data-nav-load]');
 
   const tl = gsap.timeline({
     onComplete: () => { current.remove() }
