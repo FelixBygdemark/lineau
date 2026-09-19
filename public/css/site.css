@@ -333,6 +333,19 @@
   width: 225%;
 }
 
+/* Dome-warp wrapper (site.js buildLoop) — isolates the per-frame matrix3d
+   from `.slide`'s own CSS position (translateY(-50%) centering) so that
+   `.slide.getBoundingClientRect()` always reads the pre-warp layout box
+   and never compounds with the warp transform written to this child. */
+.slide-warp {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
 /* Home slider — grayscale/dim by default, full colour + opacity on hover.
    Gated to hover-capable pointers so touch just shows full colour always
    (matches the title-reveal hover, which does the same via matchMedia).

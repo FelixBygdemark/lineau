@@ -1861,6 +1861,11 @@ function initHomeSlider() {
     LERP_FACTOR: 0.05,
     MAX_VELOCITY: 150,
     LOOP_COPIES: 6,
+    BOW: 0.15, // dome depth — 0 = flat, tune live
+    BULGE: 0.3, // mouse-bulge strength
+    REACH: 400, // mouse-bulge falloff radius, px
+    CURSOR_LERP: 0.12, // cursor-follow smoothing
+    CALM_DIVISOR: 200, // higher = bulge survives faster drags
   };
 
   const state = {
@@ -1874,6 +1879,12 @@ function initHomeSlider() {
     lastMouseX: 0,
     dragDistance: 0,
     hasActuallyDragged: false,
+    cursorX: 0,
+    cursorY: 0,
+    cursorTargetX: 0,
+    cursorTargetY: 0,
+    bulgeWeight: 0,
+    bulgeWeightTarget: 0,
   };
 
   // Title-reveal hover animation is hover-only — on touch devices the
@@ -1932,13 +1943,24 @@ function initHomeSlider() {
     for (let copy = 0; copy < config.LOOP_COPIES; copy++) {
       originalSlides.forEach((slide) => {
         const clone = slide.cloneNode(true);
+
+        // Move the clone's real content into a `.slide-warp` child so the
+        // per-frame dome/bulge matrix3d lands there, not on `clone` itself.
+        // `clone`'s own CSS position (translateY(-50%) centering) is then
+        // never touched by our transform, so `clone.getBoundingClientRect()`
+        // stays a stable, un-compounded read every frame.
+        const warp = document.createElement("div");
+        warp.className = "slide-warp";
+        while (clone.firstChild) warp.appendChild(clone.firstChild);
+        clone.appendChild(warp);
+
         track.appendChild(clone);
-        state.slides.push(clone);
+        state.slides.push({ el: clone, warp });
         setupTitleHover(clone);
       });
     }
 
-    state.slideWidth = measureSlideWidth(state.slides[0]);
+    state.slideWidth = measureSlideWidth(state.slides[0].el);
 
     const startOffset = -(slideCount * state.slideWidth * 2);
     state.currentX = startOffset;
@@ -1959,34 +1981,125 @@ function initHomeSlider() {
     track.style.transform = `translate3d(${state.currentX}px, 0, 0)`;
   }
 
-  function updateParallax() {
-    const viewportCenter = window.innerWidth / 2;
+  // Dome warp + mouse bulge — each card's 4 corners are pushed radially
+  // away from viewport center (pincushion) and, near the cursor, further
+  // out by a gaussian lens. Returns the corner's ABSOLUTE displacement
+  // (warped - raw), not an absolute position — see domeMatrix() below for
+  // why that matters.
+  function warpCorner(px, py, calmBulge) {
+    const nx = px / (window.innerWidth / 2);
+    const ny = py / (window.innerHeight / 2);
+    const f = 1 + config.BOW * (nx * nx + ny * ny);
+    let wx = px * f;
+    let wy = py * f;
 
-    state.slides.forEach((slide) => {
+    if (calmBulge > 0) {
+      const dx = wx - state.cursorX;
+      const dy = wy - state.cursorY;
+      const push =
+        config.BULGE *
+        calmBulge *
+        Math.exp(-(dx * dx + dy * dy) / (config.REACH * config.REACH));
+      wx += dx * push;
+      wy += dy * push;
+    }
+
+    return { x: wx - px, y: wy - py };
+  }
+
+  // Rect (0,0)-(cardW,cardH) -> quad homography, written as one matrix3d.
+  // q0..q3 (tl, tr, bl, br) are in the element's own local pixel frame, with
+  // transform-origin: 0 0 on `.slide-warp` — so the matrix's translation
+  // term is a pure DELTA on top of the wrapper's normal (inset: 0) layout
+  // position, never an absolute page coordinate. Normalized by cardW/cardH
+  // separately (not one shared divisor) since our cards aren't square.
+  function domeMatrix(cardW, cardH, q0, q1, q2, q3) {
+    const dx1 = q1.x - q3.x, dy1 = q1.y - q3.y;
+    const dx2 = q2.x - q3.x, dy2 = q2.y - q3.y;
+    const sx = q0.x - q1.x - q2.x + q3.x;
+    const sy = q0.y - q1.y - q2.y + q3.y;
+    const den = dx1 * dy2 - dx2 * dy1;
+    const g = den ? (sx * dy2 - dx2 * sy) / den : 0;
+    const h = den ? (dx1 * sy - sx * dy1) / den : 0;
+    const a = q1.x - q0.x + g * q1.x;
+    const b = q2.x - q0.x + h * q2.x;
+    const d = q1.y - q0.y + g * q1.y;
+    const e = q2.y - q0.y + h * q2.y;
+    return `matrix3d(${a / cardW}, ${d / cardW}, 0, ${g / cardW}, ${b / cardH}, ${e / cardH}, 0, ${h / cardH}, 0, 0, 1, 0, ${q0.x}, ${q0.y}, 0, 1)`;
+  }
+
+  function updateCardEffects() {
+    const viewportCenterX = window.innerWidth / 2;
+    const viewportCenterY = window.innerHeight / 2;
+
+    // Fade the bulge out while the slider is moving fast, so the lens
+    // doesn't fight the motion — same "calm" idea as the dome-grid reference.
+    const lag = Math.abs(state.targetX - state.currentX);
+    const calm = 1 / (1 + lag / config.CALM_DIVISOR);
+    const calmBulge = supportsHover ? state.bulgeWeight * calm : 0;
+
+    state.slides.forEach(({ el: slide, warp }) => {
       const img = slide.querySelector("img");
       if (!img) return;
 
+      // `slide` never receives our transform (only `warp` does), so this
+      // rect is always the stable, un-compounded CSS layout box.
       const slideRect = slide.getBoundingClientRect();
       if (slideRect.right < -500 || slideRect.left > window.innerWidth + 500) {
         return;
       }
 
       const slideCenter = slideRect.left + slideRect.width / 2;
-      const distanceFromCenter = slideCenter - viewportCenter;
+      const distanceFromCenter = slideCenter - viewportCenterX;
       const parallaxOffset = distanceFromCenter * -0.25;
 
       // No scale — the image is 225%-wide and pre-centered via CSS
       // (.home-slider-image: left: 50%); -50% here re-applies that
       // centering since setting .transform overwrites any CSS transform.
       img.style.transform = `translateX(calc(-50% + ${parallaxOffset}px))`;
+
+      const cx = slideCenter - viewportCenterX;
+      const cy = slideRect.top + slideRect.height / 2 - viewportCenterY;
+      const hw = slideRect.width / 2;
+      const hh = slideRect.height / 2;
+
+      const dTl = warpCorner(cx - hw, cy - hh, calmBulge);
+      const dTr = warpCorner(cx + hw, cy - hh, calmBulge);
+      const dBl = warpCorner(cx - hw, cy + hh, calmBulge);
+      const dBr = warpCorner(cx + hw, cy + hh, calmBulge);
+
+      const q0 = { x: dTl.x, y: dTl.y };
+      const q1 = { x: slideRect.width + dTr.x, y: dTr.y };
+      const q2 = { x: dBl.x, y: slideRect.height + dBl.y };
+      const q3 = { x: slideRect.width + dBr.x, y: slideRect.height + dBr.y };
+
+      warp.style.transform = domeMatrix(slideRect.width, slideRect.height, q0, q1, q2, q3);
     });
+  }
+
+  function updateCursor() {
+    if (!supportsHover) return;
+    state.cursorX += (state.cursorTargetX - state.cursorX) * config.CURSOR_LERP;
+    state.cursorY += (state.cursorTargetY - state.cursorY) * config.CURSOR_LERP;
+    state.bulgeWeight += (state.bulgeWeightTarget - state.bulgeWeight) * config.CURSOR_LERP;
+  }
+
+  function handleCursorMove(e) {
+    state.cursorTargetX = e.clientX - window.innerWidth / 2;
+    state.cursorTargetY = e.clientY - window.innerHeight / 2;
+    state.bulgeWeightTarget = 1;
+  }
+
+  function handleCursorLeave() {
+    state.bulgeWeightTarget = 0;
   }
 
   function animate() {
     state.currentX += (state.targetX - state.currentX) * config.LERP_FACTOR;
 
     updateSlidePositions();
-    updateParallax();
+    updateCursor();
+    updateCardEffects();
 
     requestAnimationFrame(animate);
   }
@@ -2083,6 +2196,11 @@ function initHomeSlider() {
   sliderEl.addEventListener("mouseleave", handleMouseUp);
   sliderEl.addEventListener("dragstart", (e) => e.preventDefault());
   track.addEventListener("click", handleSlideClick);
+
+  if (supportsHover) {
+    sliderEl.addEventListener("mousemove", handleCursorMove);
+    sliderEl.addEventListener("mouseleave", handleCursorLeave);
+  }
 
   document.addEventListener("mousemove", handleMouseMove);
   document.addEventListener("mouseup", handleMouseUp);
